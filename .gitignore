@@ -35,3 +35,4 @@ data/input/*
 
 # Docker
 docker-compose.override.yml
+/server/logs
