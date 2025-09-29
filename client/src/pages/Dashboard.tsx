@@ -12,6 +12,8 @@ import {
   Clock,
   Zap
 } from 'lucide-react'
+import { AnalysisForm } from '@/components/AnalysisForm'
+import { AnalysisDetail } from '@/components/AnalysisDetail'
 
 // Datos mock para análisis de Morpheus Nvidia
 const mockDatasetInfo = {
@@ -55,10 +57,66 @@ const mockModelsStatus = [
 
 export function Dashboard() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [currentView, setCurrentView] = useState<'overview' | 'form' | 'detail'>('overview')
+  const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(null)
 
   const handleRunAnalysis = () => {
     setIsAnalyzing(true)
     setTimeout(() => setIsAnalyzing(false), 3000)
+  }
+
+  const handleNewAnalysis = () => {
+    setCurrentView('form')
+  }
+
+  const handleAnalysisSubmit = (model: string, parameters: Record<string, any>, file: File | null) => {
+    setIsAnalyzing(true)
+    console.log('Ejecutando análisis:', { model, parameters, file })
+
+    // Simular procesamiento
+    setTimeout(() => {
+      setIsAnalyzing(false)
+      setCurrentView('overview')
+      // Aquí podrías actualizar el estado con el nuevo análisis
+    }, 3000)
+  }
+
+  const handleViewDetail = (analysisId: string) => {
+    setSelectedAnalysisId(analysisId)
+    setCurrentView('detail')
+  }
+
+  const handleBackToOverview = () => {
+    setCurrentView('overview')
+    setSelectedAnalysisId(null)
+  }
+
+  if (currentView === 'form') {
+    return (
+      <div className="notebook-container">
+        <AnalysisForm
+          onSubmit={handleAnalysisSubmit}
+          isLoading={isAnalyzing}
+        />
+        <div className="mt-4">
+          <button
+            onClick={handleBackToOverview}
+            className="text-neutral-600 hover:text-neutral-900 text-sm"
+          >
+            ← Volver al resumen
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (currentView === 'detail' && selectedAnalysisId) {
+    return (
+      <AnalysisDetail
+        analysisId={selectedAnalysisId}
+        onBack={handleBackToOverview}
+      />
+    )
   }
 
   return (
@@ -144,55 +202,45 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Analysis Execution */}
+      {/* Quick Actions */}
       <div className="notebook-cell">
         <div className="notebook-cell-header">
           <div className="flex items-center space-x-2">
             <Zap className="w-5 h-5 text-neutral-600" />
-            <span className="font-medium text-neutral-900">Ejecución de Análisis</span>
+            <span className="font-medium text-neutral-900">Acciones Rápidas</span>
           </div>
-          <button
-            onClick={handleRunAnalysis}
-            disabled={isAnalyzing}
-            className="flex items-center space-x-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Play className="w-4 h-4" />
-            <span>{isAnalyzing ? 'Analizando...' : 'Ejecutar Análisis'}</span>
-          </button>
         </div>
         <div className="notebook-cell-content">
-          <div className="notebook-cell-code">
-            <div className="flex items-center space-x-2 mb-2">
-              <span className="text-yellow-400">$</span>
-              <span>morpheus run --pipeline fraud_detection --input {mockDatasetInfo.name} --confidence 0.85</span>
-            </div>
-            {isAnalyzing && (
-              <div className="space-y-1">
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin w-3 h-3 border border-green-400 border-t-transparent rounded-full"></div>
-                  <span>Cargando datos de entrada...</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin w-3 h-3 border border-green-400 border-t-transparent rounded-full"></div>
-                  <span>Inicializando modelos de Morpheus...</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin w-3 h-3 border border-green-400 border-t-transparent rounded-full"></div>
-                  <span>Procesando {mockDatasetInfo.rows.toLocaleString()} registros...</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="animate-spin w-3 h-3 border border-green-400 border-t-transparent rounded-full"></div>
-                  <span>Ejecutando detección de anomalías...</span>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button
+              onClick={handleNewAnalysis}
+              className="p-6 border-2 border-dashed border-orange-300 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-colors group"
+            >
+              <div className="text-center">
+                <Play className="w-8 h-8 text-orange-500 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                <h3 className="font-medium text-neutral-900">Nuevo Análisis</h3>
+                <p className="text-sm text-neutral-600 mt-1">Configura y ejecuta un análisis personalizado</p>
               </div>
-            )}
-            {!isAnalyzing && (
-              <div className="space-y-1 text-green-400">
-                <p>✓ Análisis completado exitosamente</p>
-                <p>✓ {mockAnalysisResults.totalAnomalies} anomalías detectadas</p>
-                <p>✓ Precisión del modelo: {mockAnalysisResults.confidenceScore}%</p>
+            </button>
+
+            <button
+              onClick={() => handleViewDetail('1')}
+              className="p-6 border border-neutral-200 rounded-lg hover:border-neutral-300 hover:bg-neutral-50 transition-colors group"
+            >
+              <div className="text-center">
+                <BarChart3 className="w-8 h-8 text-blue-500 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                <h3 className="font-medium text-neutral-900">Ver Último Análisis</h3>
+                <p className="text-sm text-neutral-600 mt-1">Revisa los resultados detallados</p>
               </div>
-            )}
+            </button>
+
+            <button className="p-6 border border-neutral-200 rounded-lg hover:border-neutral-300 hover:bg-neutral-50 transition-colors group">
+              <div className="text-center">
+                <Download className="w-8 h-8 text-green-500 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+                <h3 className="font-medium text-neutral-900">Exportar Datos</h3>
+                <p className="text-sm text-neutral-600 mt-1">Descarga resultados en CSV/JSON</p>
+              </div>
+            </button>
           </div>
         </div>
       </div>

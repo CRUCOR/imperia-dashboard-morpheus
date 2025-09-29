@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Download, Eye, Clock, CheckCircle, XCircle, Loader, RefreshCw, Search } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { ProcessingJob } from '@/types'
+import { AnalysisDetail } from '@/components/AnalysisDetail'
 
 // Datos mock en español con escenarios de Morpheus Nvidia
 const mockJobs: ProcessingJob[] = [
@@ -62,6 +63,24 @@ const mockJobs: ProcessingJob[] = [
 export function Jobs() {
   const [jobs] = useState<ProcessingJob[]>(mockJobs)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null)
+
+  const handleViewDetail = (jobId: string) => {
+    setSelectedJobId(jobId)
+  }
+
+  const handleBackToList = () => {
+    setSelectedJobId(null)
+  }
+
+  if (selectedJobId) {
+    return (
+      <AnalysisDetail
+        analysisId={selectedJobId}
+        onBack={handleBackToList}
+      />
+    )
+  }
 
   const getStatusIcon = (status: ProcessingJob['status']) => {
     switch (status) {
@@ -244,7 +263,11 @@ export function Jobs() {
                     </div>
 
                     <div className="flex items-center space-x-2 ml-4">
-                      <button className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded transition-colors" title="Ver detalles">
+                      <button
+                        onClick={() => handleViewDetail(job.id)}
+                        className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded transition-colors"
+                        title="Ver detalles"
+                      >
                         <Eye className="w-4 h-4" />
                       </button>
                       {job.status === 'completed' && (

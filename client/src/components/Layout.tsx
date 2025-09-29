@@ -15,11 +15,15 @@ export function Layout({ children }: LayoutProps) {
     { name: 'Análisis', href: '/jobs', icon: Play },
   ]
 
+  const allPages = [
+    ...navigation,
+    { name: 'Archivos', href: '/files', icon: Folder },
+    { name: 'Resultados', href: '/results', icon: FileText },
+  ]
+
   const sidebarItems = [
-    { name: 'Archivos', icon: Folder, href: '#' },
-    { name: 'Datasets', icon: Database, href: '#' },
-    { name: 'Modelos', icon: Layers, href: '#' },
-    { name: 'Resultados', icon: FileText, href: '#' },
+    { name: 'Archivos', icon: Folder, href: '/files', count: 5 },
+    { name: 'Resultados', icon: FileText, href: '/results', count: 12 },
   ]
 
   return (
@@ -72,14 +76,29 @@ export function Layout({ children }: LayoutProps) {
             {sidebarItems.map((item) => {
               const Icon = item.icon
               return (
-                <a
+                <Link
                   key={item.name}
-                  href={item.href}
-                  className="flex items-center px-3 py-2 text-sm text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                  to={item.href}
+                  className={clsx(
+                    'flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors group',
+                    location.pathname === item.href
+                      ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                      : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
+                  )}
                 >
-                  <Icon className="w-4 h-4 mr-3" />
-                  {item.name}
-                </a>
+                  <div className="flex items-center">
+                    <Icon className="w-4 h-4 mr-3" />
+                    {item.name}
+                  </div>
+                  <span className={clsx(
+                    'text-xs px-2 py-1 rounded-full transition-colors',
+                    location.pathname === item.href
+                      ? 'bg-orange-200 text-orange-700'
+                      : 'bg-neutral-200 text-neutral-600 group-hover:bg-neutral-300'
+                  )}>
+                    {item.count}
+                  </span>
+                </Link>
               )
             })}
           </nav>
@@ -101,7 +120,7 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold text-neutral-900">
-                {navigation.find(item => item.href === location.pathname)?.name || 'Panel Principal'}
+                {allPages.find(item => item.href === location.pathname)?.name || 'Panel Principal'}
               </h2>
               <p className="text-sm text-neutral-500 mt-1">
                 Análisis de datos con inteligencia artificial
