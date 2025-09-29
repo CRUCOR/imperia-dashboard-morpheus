@@ -2,7 +2,6 @@ import { useState } from 'react'
 import {
   ArrowLeft,
   Download,
-  Share2,
   AlertTriangle,
   CheckCircle,
   Clock,
@@ -188,12 +187,118 @@ const mockAnalysisDetail = {
       { time: '10:50', detections: 18 },
       { time: '10:55', detections: 8 }
     ]
-  }
+  },
+  analyzedRows: [
+    {
+      id: 'TXN_78341_001',
+      timestamp: '2024-01-15 10:45:23',
+      user_id: 'USER_7834',
+      amount: 15750.00,
+      merchant: 'Electrónica Madrid S.L.',
+      location: 'Madrid, España',
+      payment_method: 'Tarjeta débito',
+      risk_score: 0.95,
+      risk_category: 'high',
+      is_fraud: true,
+      fraud_indicators: ['unusual_amount', 'atypical_location', 'off_hours']
+    },
+    {
+      id: 'TXN_45212_003',
+      timestamp: '2024-01-15 10:43:15',
+      user_id: 'USER_4521',
+      amount: 2300.00,
+      merchant: 'Supermercado Barcelona',
+      location: 'Barcelona, España',
+      payment_method: 'Tarjeta crédito',
+      risk_score: 0.78,
+      risk_category: 'medium',
+      is_fraud: false,
+      fraud_indicators: ['high_frequency', 'repetitive_pattern']
+    },
+    {
+      id: 'TXN_91283_012',
+      timestamp: '2024-01-15 10:41:07',
+      user_id: 'USER_2198',
+      amount: 8950.00,
+      merchant: 'Joyas Valencia Premium',
+      location: 'Valencia, España',
+      payment_method: 'Transferencia',
+      risk_score: 0.89,
+      risk_category: 'high',
+      is_fraud: true,
+      fraud_indicators: ['new_payment_method', 'high_amount', 'unusual_merchant']
+    },
+    {
+      id: 'TXN_56742_008',
+      timestamp: '2024-01-15 10:39:42',
+      user_id: 'USER_8931',
+      amount: 127.50,
+      merchant: 'Farmacia Central',
+      location: 'Sevilla, España',
+      payment_method: 'Tarjeta débito',
+      risk_score: 0.65,
+      risk_category: 'medium',
+      is_fraud: false,
+      fraud_indicators: ['unusual_location']
+    },
+    {
+      id: 'TXN_34567_045',
+      timestamp: '2024-01-15 10:37:18',
+      user_id: 'USER_1045',
+      amount: 45.90,
+      merchant: 'Cafetería Bilbao',
+      location: 'Bilbao, España',
+      payment_method: 'Contactless',
+      risk_score: 0.23,
+      risk_category: 'low',
+      is_fraud: false,
+      fraud_indicators: []
+    },
+    {
+      id: 'TXN_78234_091',
+      timestamp: '2024-01-15 10:35:55',
+      user_id: 'USER_5623',
+      amount: 890.00,
+      merchant: 'Tienda Online Tech',
+      location: 'Online',
+      payment_method: 'PayPal',
+      risk_score: 0.72,
+      risk_category: 'medium',
+      is_fraud: false,
+      fraud_indicators: ['online_purchase', 'new_device']
+    },
+    {
+      id: 'TXN_12389_067',
+      timestamp: '2024-01-15 10:33:22',
+      user_id: 'USER_7892',
+      amount: 12500.00,
+      merchant: 'Concesionario Auto Madrid',
+      location: 'Madrid, España',
+      payment_method: 'Transferencia bancaria',
+      risk_score: 0.94,
+      risk_category: 'high',
+      is_fraud: true,
+      fraud_indicators: ['very_high_amount', 'unusual_merchant_category', 'first_time_merchant']
+    },
+    {
+      id: 'TXN_99874_023',
+      timestamp: '2024-01-15 10:31:45',
+      user_id: 'USER_3456',
+      amount: 67.80,
+      merchant: 'Gasolinera Repsol',
+      location: 'Zaragoza, España',
+      payment_method: 'Tarjeta crédito',
+      risk_score: 0.31,
+      risk_category: 'low',
+      is_fraud: false,
+      fraud_indicators: []
+    }
+  ]
 }
 
 export function AnalysisDetail({ analysisId, onBack }: AnalysisDetailProps) {
   const [selectedDetection, setSelectedDetection] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<'overview' | 'parameters' | 'output' | 'detections' | 'charts'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'parameters' | 'output' | 'detections' | 'charts' | 'rows'>('overview')
 
   const detail = mockAnalysisDetail
 
@@ -228,10 +333,6 @@ export function AnalysisDetail({ analysisId, onBack }: AnalysisDetailProps) {
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="flex items-center space-x-2 px-3 py-2 bg-neutral-100 text-neutral-700 rounded-lg hover:bg-neutral-200 transition-colors">
-              <Share2 className="w-4 h-4" />
-              <span>Compartir</span>
-            </button>
             <button className="flex items-center space-x-2 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors">
               <Download className="w-4 h-4" />
               <span>Exportar</span>
@@ -287,7 +388,8 @@ export function AnalysisDetail({ analysisId, onBack }: AnalysisDetailProps) {
                 { id: 'parameters', name: 'Parámetros', icon: Settings },
                 { id: 'output', name: 'Output', icon: FileText },
                 { id: 'detections', name: 'Detecciones', icon: Shield },
-                { id: 'charts', name: 'Gráficos', icon: TrendingUp }
+                { id: 'charts', name: 'Gráficos', icon: TrendingUp },
+                { id: 'rows', name: 'Filas Analizadas', icon: Database }
               ].map((tab) => {
                 const Icon = tab.icon
                 return (
@@ -683,6 +785,115 @@ export function AnalysisDetail({ analysisId, onBack }: AnalysisDetailProps) {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'rows' && (
+        <div className="notebook-cell">
+          <div className="notebook-cell-header">
+            <span className="font-medium text-neutral-900">Filas Analizadas</span>
+            <span className="text-sm text-neutral-500">{detail.analyzedRows.length} transacciones</span>
+          </div>
+          <div className="notebook-cell-content">
+            <div className="overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>ID Transacción</th>
+                    <th>Timestamp</th>
+                    <th>Usuario</th>
+                    <th>Monto</th>
+                    <th>Comercio</th>
+                    <th>Ubicación</th>
+                    <th>Método de Pago</th>
+                    <th>Puntuación de Riesgo</th>
+                    <th>Categoría</th>
+                    <th>Estado</th>
+                    <th>Indicadores</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detail.analyzedRows.map((row) => (
+                    <tr key={row.id}>
+                      <td className="font-mono text-sm">{row.id}</td>
+                      <td className="text-sm">{row.timestamp}</td>
+                      <td className="font-mono text-sm">{row.user_id}</td>
+                      <td className="text-right font-semibold">€{row.amount.toLocaleString()}</td>
+                      <td>{row.merchant}</td>
+                      <td>{row.location}</td>
+                      <td>{row.payment_method}</td>
+                      <td className="text-right">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          row.risk_score >= 0.8 ? 'bg-red-100 text-red-800' :
+                          row.risk_score >= 0.6 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {(row.risk_score * 100).toFixed(0)}%
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          row.risk_category === 'high' ? 'bg-red-100 text-red-800' :
+                          row.risk_category === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {row.risk_category === 'high' ? 'Alto' :
+                           row.risk_category === 'medium' ? 'Medio' : 'Bajo'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          row.is_fraud ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                        }`}>
+                          {row.is_fraud ? 'Fraude' : 'Normal'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex flex-wrap gap-1">
+                          {row.fraud_indicators.map((indicator, index) => (
+                            <span
+                              key={index}
+                              className="px-1 py-0.5 bg-orange-100 text-orange-700 text-xs rounded"
+                            >
+                              {indicator.replace(/_/g, ' ')}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Summary Stats for Analyzed Rows */}
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="metric-card">
+                <div className="metric-value text-red-600">
+                  {detail.analyzedRows.filter(row => row.is_fraud).length}
+                </div>
+                <div className="metric-label">Transacciones Fraudulentas</div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-value text-orange-600">
+                  {detail.analyzedRows.filter(row => row.risk_category === 'high').length}
+                </div>
+                <div className="metric-label">Alto Riesgo</div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-value text-yellow-600">
+                  {detail.analyzedRows.filter(row => row.risk_category === 'medium').length}
+                </div>
+                <div className="metric-label">Riesgo Medio</div>
+              </div>
+              <div className="metric-card">
+                <div className="metric-value text-blue-600">
+                  €{detail.analyzedRows.reduce((sum, row) => sum + row.amount, 0).toLocaleString()}
+                </div>
+                <div className="metric-label">Monto Total Analizado</div>
               </div>
             </div>
           </div>
