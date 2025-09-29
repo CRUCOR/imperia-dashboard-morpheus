@@ -10,6 +10,19 @@ interface NotebookCellProps {
   className?: string
 }
 
+const getCellTypeLabel = (type: string) => {
+  switch (type) {
+    case 'code':
+      return 'Código'
+    case 'markdown':
+      return 'Markdown'
+    case 'upload':
+      return 'Carga'
+    default:
+      return type
+  }
+}
+
 export function NotebookCell({
   type,
   children,
@@ -18,14 +31,14 @@ export function NotebookCell({
   className,
 }: NotebookCellProps) {
   return (
-    <div className={clsx('cell', className)}>
-      <div className="cell-toolbar">
+    <div className={clsx('notebook-cell', className)}>
+      <div className="notebook-cell-header">
         <div className="flex items-center space-x-2">
-          <span className="text-xs text-gray-500 uppercase tracking-wide">
-            {type}
+          <span className="text-xs text-neutral-500 uppercase tracking-wide font-medium">
+            {getCellTypeLabel(type)}
           </span>
           {type === 'code' && (
-            <span className="text-xs text-gray-400">In [ ]</span>
+            <span className="text-xs text-neutral-400">In [ ]</span>
           )}
         </div>
         <div className="flex items-center space-x-2">
@@ -34,9 +47,10 @@ export function NotebookCell({
               onClick={onRun}
               disabled={isRunning}
               className={clsx(
-                'p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-200',
-                isRunning && 'text-jupyter-orange'
+                'p-1 rounded text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200 transition-colors',
+                isRunning && 'text-orange-500'
               )}
+              title={isRunning ? 'Detener ejecución' : 'Ejecutar celda'}
             >
               {isRunning ? (
                 <Square className="w-4 h-4" />
@@ -45,12 +59,15 @@ export function NotebookCell({
               )}
             </button>
           )}
-          <button className="p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-200">
+          <button
+            className="p-1 rounded text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200 transition-colors"
+            title="Más opciones"
+          >
             <MoreHorizontal className="w-4 h-4" />
           </button>
         </div>
       </div>
-      <div className="cell-content">{children}</div>
+      <div className="notebook-cell-content">{children}</div>
     </div>
   )
 }
