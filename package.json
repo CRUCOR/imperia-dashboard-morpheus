@@ -1,0 +1,22 @@
+{
+  "name": "imperia-dashboard-morpheus",
+  "version": "1.0.0",
+  "description": "Dashboard for processing files through Nvidia Morpheus models",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "docker-compose up -d",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "npm run build --workspace=client",
+    "build:server": "npm run build --workspace=server",
+    "start": "docker-compose up",
+    "stop": "docker-compose down",
+    "clean": "docker-compose down -v --remove-orphans"
+  },
+  "keywords": ["morpheus", "nvidia", "dashboard", "docker", "typescript"],
+  "author": "",
+  "license": "MIT"
+}

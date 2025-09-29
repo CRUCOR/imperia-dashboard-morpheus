@@ -1,0 +1,33 @@
+services:
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:4000
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    depends_on:
+      - server
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - MORPHEUS_HOST=localhost
+      - MORPHEUS_PORT=8888
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+      - ./data:/app/data
+
+volumes:
+  node_modules_client:
+  node_modules_server:
