@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AlertCircle, Eye, FileText, Activity, ArrowLeft } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import Card from '../components/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import StatusBadge from '../components/StatusBadge';
@@ -370,12 +371,334 @@ export default function AnalysisDetail() {
 
           {activeTab === 'metrics' && (
             <div>
-              <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1.5rem 0' }}>
                 Métricas de Rendimiento
               </h3>
-              <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
-                Las métricas de GPU y CPU durante la ejecución estarán disponibles próximamente.
-              </p>
+              {analysis.metrics ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
+                  {/* GPU Usage Chart */}
+                  {analysis.metrics.gpu_usage && analysis.metrics.gpu_usage.length > 0 && (
+                    <div>
+                      <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
+                        Uso de GPU durante la Ejecución
+                      </h4>
+                      <div style={{ backgroundColor: '#ffffff', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={analysis.metrics.gpu_usage}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis 
+                              dataKey="timestamp" 
+                              stroke="#64748b"
+                              tick={{ fill: '#64748b', fontSize: 11 }}
+                              tickFormatter={(_value, index) => {
+                                const totalPoints = analysis.metrics.gpu_usage.length;
+                                const interval = Math.ceil(totalPoints / 5);
+                                if (index % interval === 0) {
+                                  return `${Math.floor((index / totalPoints) * 100)}%`;
+                                }
+                                return '';
+                              }}
+                            />
+                            <YAxis 
+                              stroke="#64748b" 
+                              tick={{ fill: '#64748b', fontSize: 12 }}
+                              domain={[0, 100]}
+                              label={{ 
+                                value: 'Porcentaje (%)', 
+                                angle: -90, 
+                                position: 'insideLeft',
+                                style: { fill: '#64748b', fontSize: 12 }
+                              }}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: '#ffffff', 
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '0.5rem',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                padding: '0.75rem'
+                              }}
+                              labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '0.5rem' }}
+                              formatter={(value: number) => [`${value.toFixed(2)}%`, 'Uso de GPU']}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="usage" 
+                              stroke="#f37726" 
+                              strokeWidth={2}
+                              name="Uso de GPU"
+                              dot={false}
+                              isAnimationActive={false}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                        <div style={{ 
+                          marginTop: '1rem', 
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          <div style={{ 
+                            width: '16px', 
+                            height: '3px', 
+                            backgroundColor: '#f37726',
+                            borderRadius: '2px'
+                          }}></div>
+                          <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                            Uso de GPU
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* GPU Memory Chart */}
+                  {analysis.metrics.gpu_memory && analysis.metrics.gpu_memory.length > 0 && (
+                    <div>
+                      <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
+                        Memoria GPU durante la Ejecución
+                      </h4>
+                      <div style={{ backgroundColor: '#ffffff', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={analysis.metrics.gpu_memory}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis 
+                              dataKey="timestamp" 
+                              stroke="#64748b"
+                              tick={{ fill: '#64748b', fontSize: 11 }}
+                              tickFormatter={(_value, index) => {
+                                const totalPoints = analysis.metrics.gpu_memory.length;
+                                const interval = Math.ceil(totalPoints / 5);
+                                if (index % interval === 0) {
+                                  return `${Math.floor((index / totalPoints) * 100)}%`;
+                                }
+                                return '';
+                              }}
+                            />
+                            <YAxis 
+                              stroke="#64748b" 
+                              tick={{ fill: '#64748b', fontSize: 12 }}
+                              label={{ 
+                                value: 'Memoria (MB)', 
+                                angle: -90, 
+                                position: 'insideLeft',
+                                style: { fill: '#64748b', fontSize: 12 }
+                              }}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: '#ffffff', 
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '0.5rem',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                padding: '0.75rem'
+                              }}
+                              labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '0.5rem' }}
+                              formatter={(value: number) => [`${value.toFixed(2)} MB`, 'Memoria GPU']}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="memory" 
+                              stroke="#8b5cf6" 
+                              strokeWidth={2}
+                              name="Memoria GPU"
+                              dot={false}
+                              isAnimationActive={false}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                        <div style={{ 
+                          marginTop: '1rem', 
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          <div style={{ 
+                            width: '16px', 
+                            height: '3px', 
+                            backgroundColor: '#8b5cf6',
+                            borderRadius: '2px'
+                          }}></div>
+                          <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                            Memoria GPU
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* CPU Usage Chart */}
+                  {analysis.metrics.cpu_usage && analysis.metrics.cpu_usage.length > 0 && (
+                    <div>
+                      <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
+                        Uso de CPU durante la Ejecución
+                      </h4>
+                      <div style={{ backgroundColor: '#ffffff', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={analysis.metrics.cpu_usage}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis 
+                              dataKey="timestamp" 
+                              stroke="#64748b"
+                              tick={{ fill: '#64748b', fontSize: 11 }}
+                              tickFormatter={(_value, index) => {
+                                const totalPoints = analysis.metrics.cpu_usage.length;
+                                const interval = Math.ceil(totalPoints / 5);
+                                if (index % interval === 0) {
+                                  return `${Math.floor((index / totalPoints) * 100)}%`;
+                                }
+                                return '';
+                              }}
+                            />
+                            <YAxis 
+                              stroke="#64748b" 
+                              tick={{ fill: '#64748b', fontSize: 12 }}
+                              domain={[0, 100]}
+                              label={{ 
+                                value: 'Porcentaje (%)', 
+                                angle: -90, 
+                                position: 'insideLeft',
+                                style: { fill: '#64748b', fontSize: 12 }
+                              }}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: '#ffffff', 
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '0.5rem',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                padding: '0.75rem'
+                              }}
+                              labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '0.5rem' }}
+                              formatter={(value: number) => [`${value.toFixed(2)}%`, 'Uso de CPU']}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="usage" 
+                              stroke="#10b981" 
+                              strokeWidth={2}
+                              name="Uso de CPU"
+                              dot={false}
+                              isAnimationActive={false}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                        <div style={{ 
+                          marginTop: '1rem', 
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          <div style={{ 
+                            width: '16px', 
+                            height: '3px', 
+                            backgroundColor: '#10b981',
+                            borderRadius: '2px'
+                          }}></div>
+                          <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                            Uso de CPU
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* RAM Chart */}
+                  {analysis.metrics.ram_mb && analysis.metrics.ram_mb.length > 0 && (
+                    <div>
+                      <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
+                        Memoria RAM durante la Ejecución
+                      </h4>
+                      <div style={{ backgroundColor: '#ffffff', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={analysis.metrics.ram_mb}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                            <XAxis 
+                              dataKey="timestamp" 
+                              stroke="#64748b"
+                              tick={{ fill: '#64748b', fontSize: 11 }}
+                              tickFormatter={(_value, index) => {
+                                const totalPoints = analysis.metrics.ram_mb.length;
+                                const interval = Math.ceil(totalPoints / 5);
+                                if (index % interval === 0) {
+                                  return `${Math.floor((index / totalPoints) * 100)}%`;
+                                }
+                                return '';
+                              }}
+                            />
+                            <YAxis 
+                              stroke="#64748b" 
+                              tick={{ fill: '#64748b', fontSize: 12 }}
+                              label={{ 
+                                value: 'Memoria (MB)', 
+                                angle: -90, 
+                                position: 'insideLeft',
+                                style: { fill: '#64748b', fontSize: 12 }
+                              }}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: '#ffffff', 
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '0.5rem',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                                padding: '0.75rem'
+                              }}
+                              labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '0.5rem' }}
+                              formatter={(value: number) => [`${value.toFixed(2)} MB`, 'Memoria RAM']}
+                            />
+                            <Line 
+                              type="monotone" 
+                              dataKey="memory" 
+                              stroke="#f59e0b" 
+                              strokeWidth={2}
+                              name="Memoria RAM"
+                              dot={false}
+                              isAnimationActive={false}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                        <div style={{ 
+                          marginTop: '1rem', 
+                          display: 'flex',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          <div style={{ 
+                            width: '16px', 
+                            height: '3px', 
+                            backgroundColor: '#f59e0b',
+                            borderRadius: '2px'
+                          }}></div>
+                          <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                            Memoria RAM
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ 
+                  padding: '2rem', 
+                  textAlign: 'center', 
+                  backgroundColor: '#f8fafc', 
+                  borderRadius: '0.5rem',
+                  border: '1px solid #e2e8f0' 
+                }}>
+                  <Activity size={48} color="#94a3b8" style={{ margin: '0 auto 1rem' }} />
+                  <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>
+                    No hay métricas disponibles para este análisis.
+                  </p>
+                  <p style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.5rem' }}>
+                    Las métricas se recopilan durante la ejecución del análisis.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 

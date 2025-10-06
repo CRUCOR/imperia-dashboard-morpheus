@@ -13,6 +13,12 @@ export interface Analysis {
   error?: string;
   file_metadata?: FileMetadata;
   model_parameters?: ABPParameters;
+  metrics?: {
+    gpu_usage: Array<{ timestamp: Date; usage: number }>;
+    gpu_memory: Array<{ timestamp: Date; memory: number }>;
+    cpu_usage: Array<{ timestamp: Date; usage: number }>;
+    ram_mb: Array<{ timestamp: Date; memory: number }>;
+  };
   created_at: Date;
   completed_at?: Date;
 }
@@ -78,6 +84,12 @@ export interface AnalysisResultResponse {
   error?: string;
   fileMetadata?: FileMetadata;
   modelParameters?: ABPParameters;
+  metrics?: {
+    gpu_usage: Array<{ timestamp: Date; usage: number }>;
+    gpu_memory: Array<{ timestamp: Date; memory: number }>;
+    cpu_usage: Array<{ timestamp: Date; usage: number }>;
+    ram_mb: Array<{ timestamp: Date; memory: number }>;
+  };
   createdAt: Date;
   completedAt?: Date;
 }

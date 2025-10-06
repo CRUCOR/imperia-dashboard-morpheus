@@ -43,6 +43,14 @@ export interface Analysis {
   durationMs?: number;
   error?: string;
   modelParameters?: any;
+  metrics?: AnalysisMetrics;
+}
+
+export interface AnalysisMetrics {
+  gpu_usage: GpuDataPoint[];
+  gpu_memory: GpuDataPoint[];
+  cpu_usage: GpuDataPoint[];
+  ram_mb: GpuDataPoint[];
 }
 
 export interface FileMetadata {

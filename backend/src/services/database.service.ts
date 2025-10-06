@@ -83,7 +83,42 @@ export class DatabaseService {
       return null;
     }
 
-    return result.rows[0];
+    const analysis = result.rows[0];
+    
+    // Get metrics for this analysis
+    const metricsResult = await pool.query(
+      `SELECT timestamp, gpu_usage, gpu_mem_mb as gpu_memory, cpu_usage, ram_mb
+       FROM analysis_metrics
+       WHERE analysis_id = $1
+       ORDER BY timestamp ASC`,
+      [id]
+    );
+
+    // Transform metrics into the format expected by frontend
+    if (metricsResult.rows.length > 0) {
+      const metrics = {
+        gpu_usage: metricsResult.rows.map(row => ({
+          timestamp: row.timestamp,
+          usage: row.gpu_usage
+        })),
+        gpu_memory: metricsResult.rows.map(row => ({
+          timestamp: row.timestamp,
+          memory: row.gpu_memory
+        })),
+        cpu_usage: metricsResult.rows.map(row => ({
+          timestamp: row.timestamp,
+          usage: row.cpu_usage
+        })),
+        ram_mb: metricsResult.rows.map(row => ({
+          timestamp: row.timestamp,
+          memory: row.ram_mb
+        }))
+      };
+      
+      analysis.metrics = metrics;
+    }
+
+    return analysis;
   }
 
   /**

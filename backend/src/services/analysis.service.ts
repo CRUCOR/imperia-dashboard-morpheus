@@ -282,6 +282,7 @@ export class AnalysisService {
       error: analysis.error,
       fileMetadata: analysis.file_metadata,
       modelParameters: analysis.model_parameters,
+      metrics: analysis.metrics,
       createdAt: analysis.created_at,
       completedAt: analysis.completed_at,
     };
