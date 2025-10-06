@@ -37,8 +37,11 @@ export interface Analysis {
   createdAt: string;
   completedAt?: string;
   fileMetadata?: FileMetadata;
+  inputData?: any;
   result?: any;
+  durationMs?: number;
   error?: string;
+  modelParameters?: any;
 }
 
 export interface FileMetadata {

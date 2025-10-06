@@ -276,14 +276,14 @@ export class AnalysisService {
       analysisId: analysis.id,
       modelName: analysis.model_name,
       status: analysis.status,
-      input_data: analysis.input_data,
+      inputData: analysis.input_data,
       result: analysis.result,
-      duration_ms: analysis.duration_ms,
+      durationMs: analysis.duration_ms,
       error: analysis.error,
-      file_metadata: analysis.file_metadata,
-      model_parameters: analysis.model_parameters,
-      created_at: analysis.created_at,
-      completed_at: analysis.completed_at,
+      fileMetadata: analysis.file_metadata,
+      modelParameters: analysis.model_parameters,
+      createdAt: analysis.created_at,
+      completedAt: analysis.completed_at,
     };
   }
 
@@ -313,14 +313,14 @@ export class AnalysisService {
       analysisId: analysis.id,
       modelName: analysis.model_name,
       status: analysis.status,
-      input_data: analysis.input_data,
+      inputData: analysis.input_data,
       result: analysis.result,
-      duration_ms: analysis.duration_ms,
+      durationMs: analysis.duration_ms,
       error: analysis.error,
-      file_metadata: analysis.file_metadata,
-      model_parameters: analysis.model_parameters,
-      created_at: analysis.created_at,
-      completed_at: analysis.completed_at,
+      fileMetadata: analysis.file_metadata,
+      modelParameters: analysis.model_parameters,
+      createdAt: analysis.created_at,
+      completedAt: analysis.completed_at,
     }));
   }
 }

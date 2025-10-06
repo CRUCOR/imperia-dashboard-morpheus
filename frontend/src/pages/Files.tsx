@@ -4,7 +4,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Trash2, Download, RefreshCw, FileText } from 'lucide-react';
+import { Eye, RefreshCw, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import StatusBadge from '../components/StatusBadge';
@@ -16,7 +17,7 @@ export default function Files() {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadAnalyses();
@@ -36,71 +37,19 @@ export default function Files() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de eliminar este análisis?')) {
-      return;
-    }
-
-    try {
-      setDeleting(id);
-      await apiService.deleteAnalysis(id);
-      setAnalyses(analyses.filter((a) => a.analysisId !== id));
-    } catch (err) {
-      alert('Error al eliminar: ' + (err instanceof Error ? err.message : 'Error desconocido'));
-    } finally {
-      setDeleting(null);
-    }
+  const handleViewAnalysis = (analysisId: string) => {
+    // Navigate to Analysis page and open detail
+    navigate('/analisis', { state: { analysisId } });
   };
 
-  const handleDownload = (analysis: Analysis) => {
-    const dataStr = JSON.stringify(analysis, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `analysis-${analysis.analysisId}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-
-  if (loading) {
+  if (loading && analyses.length === 0) {
     return <LoadingSpinner />;
-  }
-
-  if (error && analyses.length === 0) {
-    return (
-      <div>
-        <h1 style={{
-          fontSize: '2rem',
-          fontWeight: 'bold',
-          color: '#1e293b',
-          marginBottom: '2rem'
-        }}>
-          Archivos
-        </h1>
-        <div style={{ color: '#ef4444', textAlign: 'center', padding: '2rem', backgroundColor: '#fee2e2', borderRadius: '0.5rem', border: '1px solid #fecaca' }}>
-          Error: {error}
-        </div>
-      </div>
-    );
   }
 
   return (
     <div>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '2rem'
-      }}>
-        <h1 style={{
-          fontSize: '2rem',
-          fontWeight: 'bold',
-          color: '#1e293b',
-          margin: 0
-        }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>
           Archivos
         </h1>
         <button
@@ -111,175 +60,124 @@ export default function Files() {
             alignItems: 'center',
             gap: '0.5rem',
             padding: '0.75rem 1.5rem',
-            backgroundColor: '#f37726',
-            color: '#ffffff',
-            border: 'none',
+            backgroundColor: '#ffffff',
+            color: '#1e293b',
+            border: '1px solid #e2e8f0',
             borderRadius: '0.5rem',
-            fontSize: '0.95rem',
-            fontWeight: '600',
             cursor: loading ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s',
+            fontSize: '0.875rem',
+            fontWeight: '500'
           }}
         >
-          <RefreshCw size={18} />
+          <RefreshCw size={16} />
           Actualizar
         </button>
       </div>
 
-      <Card>
-        {analyses.length === 0 ? (
-          <div style={{
-            textAlign: 'center',
-            padding: '3rem',
-            color: '#64748b'
-          }}>
-            <FileText size={64} color="#cbd5e1" style={{ margin: '0 auto 1rem' }} />
-            <p style={{ fontSize: '1.125rem', margin: 0, color: '#475569' }}>
+      {error && (
+        <div style={{ 
+          backgroundColor: '#fee2e2', 
+          border: '1px solid #fecaca', 
+          borderRadius: '0.5rem', 
+          padding: '1rem', 
+          marginBottom: '1.5rem',
+          color: '#ef4444'
+        }}>
+          {error}
+        </div>
+      )}
+
+      {analyses.length === 0 ? (
+        <Card>
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
+            <FileText size={48} style={{ margin: '0 auto 1rem' }} />
+            <p style={{ fontSize: '1.125rem', fontWeight: '500', margin: '0 0 0.5rem 0' }}>
               No hay archivos analizados
             </p>
-            <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
-              Sube archivos en la sección de Análisis
-            </p>
+            <p style={{ margin: 0 }}>Los archivos analizados aparecerán aquí</p>
           </div>
-        ) : (
+        </Card>
+      ) : (
+        <Card>
           <div style={{ overflowX: 'auto' }}>
-            <table style={{
-              width: '100%',
-              borderCollapse: 'collapse'
-            }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
-                  <th style={{
-                    padding: '1rem',
-                    textAlign: 'left',
-                    color: '#475569',
-                    fontSize: '0.875rem',
-                    fontWeight: '600'
-                  }}>
+                <tr style={{ backgroundColor: '#f8fafc' }}>
+                  <th style={{ textAlign: 'left', padding: '0.75rem', color: '#64748b', fontWeight: '600', fontSize: '0.875rem', borderBottom: '1px solid #e2e8f0' }}>
                     ID
                   </th>
-                  <th style={{
-                    padding: '1rem',
-                    textAlign: 'left',
-                    color: '#475569',
-                    fontSize: '0.875rem',
-                    fontWeight: '600'
-                  }}>
+                  <th style={{ textAlign: 'left', padding: '0.75rem', color: '#64748b', fontWeight: '600', fontSize: '0.875rem', borderBottom: '1px solid #e2e8f0' }}>
+                    Archivo
+                  </th>
+                  <th style={{ textAlign: 'left', padding: '0.75rem', color: '#64748b', fontWeight: '600', fontSize: '0.875rem', borderBottom: '1px solid #e2e8f0' }}>
                     Modelo
                   </th>
-                  <th style={{
-                    padding: '1rem',
-                    textAlign: 'left',
-                    color: '#475569',
-                    fontSize: '0.875rem',
-                    fontWeight: '600'
-                  }}>
+                  <th style={{ textAlign: 'left', padding: '0.75rem', color: '#64748b', fontWeight: '600', fontSize: '0.875rem', borderBottom: '1px solid #e2e8f0' }}>
                     Estado
                   </th>
-                  <th style={{
-                    padding: '1rem',
-                    textAlign: 'left',
-                    color: '#475569',
-                    fontSize: '0.875rem',
-                    fontWeight: '600'
-                  }}>
+                  <th style={{ textAlign: 'left', padding: '0.75rem', color: '#64748b', fontWeight: '600', fontSize: '0.875rem', borderBottom: '1px solid #e2e8f0' }}>
+                    Tamaño
+                  </th>
+                  <th style={{ textAlign: 'left', padding: '0.75rem', color: '#64748b', fontWeight: '600', fontSize: '0.875rem', borderBottom: '1px solid #e2e8f0' }}>
                     Creado
                   </th>
-                  <th style={{
-                    padding: '1rem',
-                    textAlign: 'right',
-                    color: '#475569',
-                    fontSize: '0.875rem',
-                    fontWeight: '600'
-                  }}>
+                  <th style={{ textAlign: 'center', padding: '0.75rem', color: '#64748b', fontWeight: '600', fontSize: '0.875rem', borderBottom: '1px solid #e2e8f0' }}>
                     Acciones
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {analyses.map((analysis) => (
-                  <tr
-                    key={analysis.analysisId}
-                    style={{
-                      borderBottom: '1px solid #e2e8f0',
-                      transition: 'background-color 0.2s'
-                    }}
-                  >
-                    <td style={{
-                      padding: '1rem',
-                      color: '#64748b',
-                      fontSize: '0.875rem',
-                      fontFamily: 'monospace'
-                    }}>
+                  <tr key={analysis.analysisId} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '1rem 0.75rem', color: '#1e293b', fontSize: '0.875rem', fontFamily: 'monospace' }}>
                       {analysis.analysisId.substring(0, 8)}...
                     </td>
-                    <td style={{
-                      padding: '1rem',
-                      color: '#1e293b',
-                      fontSize: '0.875rem',
-                      fontWeight: '500'
-                    }}>
+                    <td style={{ padding: '1rem 0.75rem', color: '#1e293b', fontSize: '0.875rem' }}>
+                      {analysis.fileMetadata?.filename || 'N/A'}
+                    </td>
+                    <td style={{ padding: '1rem 0.75rem', color: '#1e293b', fontSize: '0.875rem' }}>
                       {analysis.modelName}
                     </td>
-                    <td style={{ padding: '1rem' }}>
+                    <td style={{ padding: '1rem 0.75rem' }}>
                       <StatusBadge status={analysis.status} />
                     </td>
-                    <td style={{
-                      padding: '1rem',
-                      color: '#64748b',
-                      fontSize: '0.875rem'
-                    }}>
+                    <td style={{ padding: '1rem 0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
+                      {analysis.fileMetadata?.size 
+                        ? `${(analysis.fileMetadata.size / 1024).toFixed(2)} KB`
+                        : 'N/A'
+                      }
+                    </td>
+                    <td style={{ padding: '1rem 0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
                       {formatDistanceToNow(new Date(analysis.createdAt), { addSuffix: true })}
                     </td>
-                    <td style={{
-                      padding: '1rem',
-                      textAlign: 'right'
-                    }}>
-                      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                        <button
-                          onClick={() => handleDownload(analysis)}
-                          style={{
-                            padding: '0.5rem',
-                            backgroundColor: 'transparent',
-                            color: '#10b981',
-                            border: '1px solid #10b981',
-                            borderRadius: '0.375rem',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}
-                          title="Descargar"
-                        >
-                          <Download size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(analysis.analysisId)}
-                          disabled={deleting === analysis.analysisId}
-                          style={{
-                            padding: '0.5rem',
-                            backgroundColor: 'transparent',
-                            color: deleting === analysis.analysisId ? '#94a3b8' : '#ef4444',
-                            border: `1px solid ${deleting === analysis.analysisId ? '#94a3b8' : '#ef4444'}`,
-                            borderRadius: '0.375rem',
-                            cursor: deleting === analysis.analysisId ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.2s',
-                            display: 'flex',
-                            alignItems: 'center'
-                          }}
-                          title="Eliminar"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                    <td style={{ padding: '1rem 0.75rem', textAlign: 'center' }}>
+                      <button
+                        onClick={() => handleViewAnalysis(analysis.analysisId)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          padding: '0.5rem 1rem',
+                          backgroundColor: '#f37726',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '0.375rem',
+                          cursor: 'pointer',
+                          fontSize: '0.875rem',
+                          fontWeight: '500'
+                        }}
+                      >
+                        <Eye size={14} />
+                        Ver
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-      </Card>
+        </Card>
+      )}
     </div>
   );
 }

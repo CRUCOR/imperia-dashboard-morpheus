@@ -12,6 +12,7 @@ import StatusBadge from '../components/StatusBadge';
 import apiService from '../services/api.service';
 import type { DashboardStats, GpuUsageHistory } from '../types';
 import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -383,7 +384,7 @@ export default function Dashboard() {
                     fontSize: '0.75rem', 
                     margin: 0 
                   }}>
-                    {formatDistanceToNow(new Date(analysis.createdAt), { addSuffix: true, locale: { code: 'es' } })}
+                    {formatDistanceToNow(new Date(analysis.createdAt), { addSuffix: true, locale: es })}
                   </p>
                 </div>
               ))

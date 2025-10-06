@@ -9,7 +9,7 @@ import multer from 'multer';
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB limit
+    fileSize: 2048 * 1024 * 1024, // 2GB limit
   },
   fileFilter: (req, file, cb) => {
     // Accept images, medical imaging formats, and jsonlines

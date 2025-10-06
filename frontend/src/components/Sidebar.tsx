@@ -9,8 +9,8 @@ import { LayoutDashboard, Activity, FolderOpen } from 'lucide-react';
 export default function Sidebar() {
   const menuItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/analysis', icon: Activity, label: 'Análisis' },
-    { path: '/files', icon: FolderOpen, label: 'Archivos' },
+    { path: '/analisis', icon: Activity, label: 'Análisis' },
+    { path: '/archivos', icon: FolderOpen, label: 'Archivos' },
   ];
 
   return (

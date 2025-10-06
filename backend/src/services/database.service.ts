@@ -134,10 +134,31 @@ export class DatabaseService {
 
   /**
    * List analyses with pagination
+   * Excludes input_data and result to reduce payload size
    */
   async listAnalyses(limit: number, offset: number): Promise<Analysis[]> {
     const result = await pool.query(
-      `SELECT * FROM analyses
+      `SELECT 
+         id,
+         model_name,
+         status,
+         CASE 
+           WHEN input_data IS NOT NULL AND input_data->>'num_rows' IS NOT NULL 
+           THEN jsonb_build_object('num_rows', (input_data->>'num_rows')::int)
+           ELSE NULL 
+         END as input_data,
+         CASE 
+           WHEN result IS NOT NULL AND result->>'num_rows' IS NOT NULL 
+           THEN jsonb_build_object('num_rows', (result->>'num_rows')::int)
+           ELSE NULL 
+         END as result,
+         duration_ms,
+         error,
+         file_metadata,
+         model_parameters,
+         created_at,
+         completed_at
+       FROM analyses
        ORDER BY created_at DESC
        LIMIT $1 OFFSET $2`,
       [limit, offset]

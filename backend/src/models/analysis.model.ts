@@ -72,14 +72,14 @@ export interface AnalysisResultResponse {
   analysisId: string;
   modelName: string;
   status: string;
-  input_data?: any;
+  inputData?: any;
   result?: any;
-  duration_ms?: number;
+  durationMs?: number;
   error?: string;
-  file_metadata?: FileMetadata;
-  model_parameters?: ABPParameters;
-  created_at: Date;
-  completed_at?: Date;
+  fileMetadata?: FileMetadata;
+  modelParameters?: ABPParameters;
+  createdAt: Date;
+  completedAt?: Date;
 }
 
 export interface AnalysisMetricsResponse {
