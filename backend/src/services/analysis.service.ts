@@ -56,13 +56,30 @@ export class AnalysisService {
 
   /**
    * Extract input data from file
+   * For large files (>50MB), only store metadata to avoid PostgreSQL JSONB 256MB limit
    */
   private async extractInputData(file: Express.Multer.File): Promise<any> {
+    const fileSizeMB = file.size / (1024 * 1024);
+    
     // Check if file is jsonlines
     if (file.originalname.toLowerCase().endsWith('.jsonlines') ||
         file.originalname.toLowerCase().endsWith('.jsonl') ||
         file.originalname.toLowerCase().endsWith('.ndjson')) {
       const parsed = this.parseJsonlines(file.buffer);
+      
+      // For large files, only store summary to avoid database size issues
+      if (fileSizeMB > 50) {
+        console.log(`[extractInputData] Large file detected (${fileSizeMB.toFixed(2)}MB). Storing metadata only.`);
+        return {
+          type: 'jsonlines',
+          num_rows: parsed.length,
+          file_size_mb: parseFloat(fileSizeMB.toFixed(2)),
+          preview_note: 'Data preview omitted for large files',
+          sample_first: parsed.slice(0, 10), // First 10 rows
+          sample_last: parsed.slice(-10)     // Last 10 rows
+        };
+      }
+      
       return {
         type: 'jsonlines',
         num_rows: parsed.length,
