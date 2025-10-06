@@ -12,10 +12,6 @@ const options: swaggerJsdoc.Options = {
     info: {
       title: 'Imperia Dashboard Morpheus API',
       version: '1.0.0',
-      license: {
-        name: 'MIT',
-        url: 'https://opensource.org/licenses/MIT',
-      },
     },
     servers: [
       {
