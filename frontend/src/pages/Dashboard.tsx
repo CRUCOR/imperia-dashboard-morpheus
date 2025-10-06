@@ -131,7 +131,9 @@ export default function Dashboard() {
             <div>
               <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>Uso GPU</p>
               <p style={{ color: '#1e293b', fontSize: '2rem', fontWeight: 'bold', margin: '0.5rem 0 0 0' }}>
-                {stats.gpu.usage.toFixed(1)}%
+                {gpuHistory.history.length > 0 
+                  ? gpuHistory.history[gpuHistory.history.length - 1].usage.toFixed(1)
+                  : stats.gpu.usage.toFixed(1)}%
               </p>
             </div>
             <Cpu size={40} color="#8b5cf6" />
