@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: morpheus-triton-service
+  namespace: ai-platform
+  labels:
+    app: morpheus-triton
+    component: ml-model
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: morpheus-triton

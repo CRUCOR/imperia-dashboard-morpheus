@@ -1,0 +1,17 @@
+/**
+ * Routes Index
+ * Combines all routes
+ */
+
+import { Router } from 'express';
+import analysisRoutes from './analysis.routes';
+import monitoringRoutes from './monitoring.routes';
+
+const router = Router();
+
+// Mount routes - ORDER MATTERS!
+// Monitoring routes must come first to avoid /metrics/global matching /metrics/:analysisId
+router.use('/', monitoringRoutes);
+router.use('/', analysisRoutes);
+
+export default router;
