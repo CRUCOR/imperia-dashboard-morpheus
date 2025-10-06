@@ -78,18 +78,25 @@ services:
     restart: unless-stopped
 
   # Frontend (Optional - can be added later)
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: imperia-frontend
-  #   ports:
-  #     - "8080:80"
-  #   networks:
-  #     - imperia-network
-  #   depends_on:
-  #     - backend
-  #   restart: unless-stopped
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: imperia-frontend
+    ports:
+      - "8080:80"
+    networks:
+      - imperia-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
 
 networks:
   imperia-network:

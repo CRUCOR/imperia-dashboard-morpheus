@@ -200,4 +200,34 @@ router.get('/status', monitoringController.getServicesStatus);
  */
 router.get('/metrics/global', monitoringController.getGlobalMetrics);
 
+/**
+ * @swagger
+ * /dashboard/stats:
+ *   get:
+ *     summary: Get dashboard statistics
+ *     description: Retrieve statistics for the dashboard including total analyses, in progress, recent analyses, services status, and GPU metrics
+ *     tags: [Monitoring]
+ *     responses:
+ *       200:
+ *         description: Dashboard statistics retrieved successfully
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/dashboard/stats', monitoringController.getDashboardStats);
+
+/**
+ * @swagger
+ * /dashboard/gpu-usage:
+ *   get:
+ *     summary: Get GPU usage history
+ *     description: Retrieve current and historical GPU usage data
+ *     tags: [Monitoring]
+ *     responses:
+ *       200:
+ *         description: GPU usage history retrieved successfully
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/dashboard/gpu-usage', monitoringController.getGpuUsageHistory);
+
 export default router;

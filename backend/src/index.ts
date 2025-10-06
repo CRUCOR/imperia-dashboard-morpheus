@@ -12,7 +12,7 @@ import { swaggerSpec } from './config/swagger';
 import routes from './routes';
 import { errorHandler } from './middleware/error.middleware';
 import { pool } from './config/database';
-import { socketService } from './services';
+import { socketService, monitoringService } from './services';
 
 const app: Application = express();
 const httpServer = http.createServer(app);
@@ -43,6 +43,9 @@ app.use(errorHandler);
 
 // Initialize Socket.IO
 socketService.initialize(httpServer);
+
+// Start GPU metrics collection
+monitoringService.startGpuMetricsCollection();
 
 // Start server
 const PORT = config.port;

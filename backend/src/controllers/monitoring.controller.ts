@@ -57,6 +57,40 @@ export class MonitoringController {
       });
     }
   }
+
+  /**
+   * GET /dashboard/stats
+   * Get dashboard statistics
+   */
+  async getDashboardStats(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await monitoringService.getDashboardStats();
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in getDashboardStats:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * GET /dashboard/gpu-usage
+   * Get GPU usage history
+   */
+  async getGpuUsageHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await monitoringService.getGpuUsageHistory();
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('Error in getGpuUsageHistory:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
 }
 
 export default new MonitoringController();
