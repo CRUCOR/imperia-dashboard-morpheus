@@ -505,7 +505,7 @@ export default function AnalysisPage() {
                 {analyses.map((analysis) => (
                   <tr key={analysis.analysisId} style={{ borderBottom: '1px solid #e2e8f0' }}>
                     <td style={{ padding: '1rem 0.75rem', color: '#1e293b', fontSize: '0.875rem', fontFamily: 'monospace' }}>
-                      {analysis.analysisId.substring(0, 8)}...
+                      {analysis.analysisId}
                     </td>
                     <td style={{ padding: '1rem 0.75rem', color: '#1e293b', fontSize: '0.875rem' }}>
                       {analysis.modelName}

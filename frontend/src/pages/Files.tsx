@@ -12,6 +12,7 @@ import StatusBadge from '../components/StatusBadge';
 import apiService from '../services/api.service';
 import type { Analysis } from '../types';
 import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function Files() {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
@@ -133,7 +134,7 @@ export default function Files() {
                       {analysis.analysisId.substring(0, 8)}...
                     </td>
                     <td style={{ padding: '1rem 0.75rem', color: '#1e293b', fontSize: '0.875rem' }}>
-                      {analysis.fileMetadata?.filename || 'N/A'}
+                      {(analysis.fileMetadata as any)?.file_name || 'N/A'}
                     </td>
                     <td style={{ padding: '1rem 0.75rem', color: '#1e293b', fontSize: '0.875rem' }}>
                       {analysis.modelName}
@@ -142,13 +143,15 @@ export default function Files() {
                       <StatusBadge status={analysis.status} />
                     </td>
                     <td style={{ padding: '1rem 0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
-                      {analysis.fileMetadata?.size 
-                        ? `${(analysis.fileMetadata.size / 1024).toFixed(2)} KB`
+                      {(analysis.fileMetadata as any)?.file_size_mb
+                        ? `${(analysis.fileMetadata as any).file_size_mb.toFixed(2)} MB`
+                        : (analysis.fileMetadata as any)?.file_size_bytes
+                        ? `${((analysis.fileMetadata as any).file_size_bytes / (1024 * 1024)).toFixed(2)} MB`
                         : 'N/A'
                       }
                     </td>
                     <td style={{ padding: '1rem 0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
-                      {formatDistanceToNow(new Date(analysis.createdAt), { addSuffix: true })}
+                      {analysis.createdAt ? formatDistanceToNow(new Date(analysis.createdAt), { addSuffix: true, locale: es }) : 'N/A'}
                     </td>
                     <td style={{ padding: '1rem 0.75rem', textAlign: 'center' }}>
                       <button

@@ -96,13 +96,16 @@ async def predict(
     file: UploadFile = File(...),
     model_name: str = Form("abp"),
     analysisId: Optional[str] = Form(None),
-    pipeline_batch_size: Optional[int] = Form(None),
-    model_max_batch_size: Optional[int] = Form(None),
-    num_threads: Optional[int] = Form(None)
+    pipeline_batch_size: Optional[int] = Form(256),
+    model_max_batch_size: Optional[int] = Form(32),
+    num_threads: Optional[int] = Form(4)
 ):
     """
     ABP (Anomalous Behavior Profiling) model prediction endpoint
-    Processes files with configurable batch sizes and threading
+    Analyzes network traffic (PCAP) to detect crypto mining activity
+    
+    Input: jsonlines file with network packet data
+    Output: Per-packet predictions indicating mining activity
     """
     start_time = time.time()
 
@@ -112,50 +115,158 @@ async def predict(
         file_size_mb = len(file_content) / (1024 ** 2)
 
         print(f"[{analysisId}] Processing file: {file.filename} ({file_size_mb:.2f} MB)")
-        print(f"[{analysisId}] Model: {model_name}")
+        print(f"[{analysisId}] Model: {model_name} (Crypto Mining Detection)")
         print(f"[{analysisId}] ABP Parameters:")
         print(f"  - pipeline_batch_size: {pipeline_batch_size}")
         print(f"  - model_max_batch_size: {model_max_batch_size}")
         print(f"  - num_threads: {num_threads}")
 
-        # Simulate processing time (2-5 seconds)
-        processing_time = random.uniform(2, 5)
+        # Parse jsonlines file (PCAP network traffic data)
+        import json
+        network_packets = []
+        try:
+            content_str = file_content.decode('utf-8')
+            lines = content_str.strip().split('\n')
+            
+            for line in lines:
+                if line.strip():
+                    try:
+                        packet = json.loads(line)
+                        network_packets.append(packet)
+                    except json.JSONDecodeError as e:
+                        print(f"[{analysisId}] Warning: Could not parse line: {e}")
+                        continue
+            
+            num_rows = len(network_packets)
+            print(f"[{analysisId}] Loaded {num_rows} network packets for analysis")
+            
+        except Exception as e:
+            print(f"[{analysisId}] Error parsing jsonlines file: {e}")
+            raise Exception(f"Invalid file format. Expected jsonlines with network packet data: {e}")
+
+        if num_rows == 0:
+            raise Exception("No valid network packets found in file")
+
+        # Simulate real processing time based on file size and batch parameters
+        # More realistic timing: ~1000-5000 packets per second depending on GPU
+        estimated_throughput = 2000  # packets per second
+        processing_time = max(2.0, num_rows / estimated_throughput)
+        
+        print(f"[{analysisId}] Estimated processing time: {processing_time:.2f}s")
 
         # Update metrics during processing
-        for i in range(int(processing_time * 2)):  # Update every 0.5s
+        num_updates = int(processing_time * 2)
+        for i in range(num_updates):
             update_metrics(processing=True)
             time.sleep(0.5)
 
-        # Mock ABP analysis result with parameters
-        mock_result = {
-            "analysisId": analysisId,
-            "model": model_name,
-            "predictions": [
-                {
-                    "class": "benign",
-                    "confidence": random.uniform(0.85, 0.99),
-                    "bounding_box": {
-                        "x": random.randint(100, 300),
-                        "y": random.randint(100, 300),
-                        "width": random.randint(50, 150),
-                        "height": random.randint(50, 150)
-                    }
+        # ABP Model Analysis - Detect crypto mining patterns in network traffic
+        # This is a simulation of the real Morpheus ABP model
+        predictions = []
+        
+        for idx, packet in enumerate(network_packets):
+            # Analyze packet features for mining detection
+            # In real model, this would use trained weights to detect mining patterns
+            
+            # Extract features from packet
+            dest_port = int(packet.get("dest_port", 0))
+            src_port = int(packet.get("src_port", 0))
+            data_len = int(packet.get("data_len", 0))
+            protocol = packet.get("protocol", "6")
+            
+            # Heuristic-based mining detection (simulating trained model)
+            # Common mining ports: 3333, 4444, 5555, 8333, 9332, 14433, 45560
+            mining_ports = [3333, 4444, 5555, 8333, 9332, 14433, 45560]
+            is_mining_port = dest_port in mining_ports or src_port in mining_ports
+            
+            # Mining traffic typically has consistent packet sizes
+            is_suspicious_size = 54 <= data_len <= 100
+            
+            # Calculate anomaly probability (simulating model inference)
+            base_probability = 0.02  # 2% baseline
+            
+            if is_mining_port:
+                anomaly_probability = 0.85 + random.uniform(-0.1, 0.1)
+            elif is_suspicious_size and random.random() < 0.1:
+                anomaly_probability = 0.65 + random.uniform(-0.15, 0.15)
+            else:
+                anomaly_probability = base_probability + random.uniform(-0.01, 0.05)
+            
+            # Clamp probability
+            anomaly_probability = max(0.0, min(1.0, anomaly_probability))
+            
+            # Model prediction output - complete JSON object from model
+            # This is what the actual ABP model would return
+            is_mining = anomaly_probability > 0.5
+            
+            prediction_entry = {
+                "row_id": idx,
+                "prediction": {
+                    "is_mining": is_mining,
+                    "mining_probability": round(anomaly_probability, 4),
+                    "benign_probability": round(1.0 - anomaly_probability, 4),
+                    "confidence": round(anomaly_probability if is_mining else (1.0 - anomaly_probability), 4),
+                    "anomaly_score": round(anomaly_probability, 4),
+                    "detected_patterns": []
                 },
-                {
-                    "class": "malignant",
-                    "confidence": random.uniform(0.01, 0.15),
-                    "bounding_box": {
-                        "x": random.randint(400, 600),
-                        "y": random.randint(200, 400),
-                        "width": random.randint(30, 100),
-                        "height": random.randint(30, 100)
-                    }
+                "packet_info": {
+                    "src_ip": packet.get("src_ip", ""),
+                    "dest_ip": packet.get("dest_ip", ""),
+                    "src_port": src_port,
+                    "dest_port": dest_port,
+                    "protocol": protocol,
+                    "data_len": data_len,
+                    "timestamp": packet.get("timestamp", "")
                 }
-            ],
+            }
+            
+            # Add detected patterns for mining traffic
+            if is_mining_port:
+                prediction_entry["prediction"]["detected_patterns"].append({
+                    "pattern": "suspicious_port",
+                    "description": f"Connection to known mining port {dest_port}",
+                    "severity": "high"
+                })
+            
+            if is_suspicious_size:
+                prediction_entry["prediction"]["detected_patterns"].append({
+                    "pattern": "consistent_packet_size",
+                    "description": f"Packet size ({data_len} bytes) matches mining traffic pattern",
+                    "severity": "medium"
+                })
+            
+            predictions.append(prediction_entry)
+
+        # Calculate statistics from prediction results
+        num_mining = sum(1 for p in predictions if p["prediction"]["is_mining"])
+        num_benign = num_rows - num_mining
+        
+        # Identify suspicious IPs (IPs with high mining activity)
+        ip_mining_counts = {}
+        for pred in predictions:
+            if pred["prediction"]["is_mining"]:
+                src_ip = pred["packet_info"]["src_ip"]
+                ip_mining_counts[src_ip] = ip_mining_counts.get(src_ip, 0) + 1
+        
+        suspicious_ips = sorted(ip_mining_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+
+        result = {
+            "analysisId": analysisId,
+            "model": f"{model_name} (Crypto Mining Detection)",
+            "num_rows": num_rows,
+            "predictions": predictions,
+            "statistics": {
+                "total_packets": num_rows,
+                "mining_detected": num_mining,
+                "benign_traffic": num_benign,
+                "mining_rate": round(num_mining / num_rows * 100, 2) if num_rows > 0 else 0,
+                "suspicious_ips": [{"ip": ip, "mining_packets": count} for ip, count in suspicious_ips]
+            },
             "metadata": {
                 "file_name": file.filename,
-                "file_size_mb": file_size_mb,
-                "processing_time_sec": time.time() - start_time,
+                "file_size_mb": round(file_size_mb, 2),
+                "processing_time_sec": round(time.time() - start_time, 2),
+                "throughput_packets_per_sec": round(num_rows / (time.time() - start_time), 2),
                 "gpu_used": GPU_AVAILABLE,
                 "abp_parameters": {
                     "pipeline_batch_size": pipeline_batch_size,
@@ -169,11 +280,16 @@ async def predict(
         update_metrics(processing=False)
 
         print(f"[{analysisId}] Processing completed in {time.time() - start_time:.2f}s")
+        print(f"[{analysisId}] Results: {num_rows} packets analyzed")
+        print(f"[{analysisId}] Mining detected: {num_mining} packets ({result['statistics']['mining_rate']}%)")
+        print(f"[{analysisId}] Throughput: {result['metadata']['throughput_packets_per_sec']:.2f} packets/s")
 
-        return mock_result
+        return result
 
     except Exception as e:
         print(f"[{analysisId}] Error during prediction: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return JSONResponse(
             status_code=500,
             content={"error": str(e), "analysisId": analysisId}

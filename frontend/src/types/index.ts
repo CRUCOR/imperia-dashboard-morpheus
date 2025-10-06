@@ -45,10 +45,11 @@ export interface Analysis {
 }
 
 export interface FileMetadata {
-  filename: string;
-  size: number;
-  mimetype: string;
-  uploadedAt: string;
+  file_name: string;
+  file_size_bytes: number;
+  file_size_mb: number;
+  file_type: string;
+  num_rows?: number;
 }
 
 export interface GpuUsageHistory {
