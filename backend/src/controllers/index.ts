@@ -5,4 +5,3 @@
 
 export { default as analysisController } from './analysis.controller';
 export { default as monitoringController } from './monitoring.controller';
-export { default as webhookController } from './webhook.controller';

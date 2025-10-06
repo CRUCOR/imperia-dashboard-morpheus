@@ -4,6 +4,7 @@
  */
 
 import express, { Application } from 'express';
+import http from 'http';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import { config } from './config';
@@ -11,8 +12,10 @@ import { swaggerSpec } from './config/swagger';
 import routes from './routes';
 import { errorHandler } from './middleware/error.middleware';
 import { pool } from './config/database';
+import { socketService } from './services';
 
 const app: Application = express();
+const httpServer = http.createServer(app);
 
 // Middleware
 app.use(cors());
@@ -38,10 +41,13 @@ app.use('/', routes);
 // Error handling middleware (must be last)
 app.use(errorHandler);
 
+// Initialize Socket.IO
+socketService.initialize(httpServer);
+
 // Start server
 const PORT = config.port;
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log('┌────────────────────────────────────────────────┐');
   console.log('│  Imperia Dashboard Morpheus - Backend API     │');
   console.log('└────────────────────────────────────────────────┘');
@@ -60,6 +66,9 @@ app.listen(PORT, () => {
   console.log(`   → GET    http://localhost:${PORT}/status`);
   console.log(`   → GET    http://localhost:${PORT}/metrics/global`);
   console.log(`   → GET    http://localhost:${PORT}/health`);
+  console.log();
+  console.log('🔌 WebSocket:');
+  console.log(`   → ws://localhost:${PORT} (room: results)`);
   console.log();
 });
 

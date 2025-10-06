@@ -5,12 +5,11 @@
 
 import databaseService from './database.service';
 import morpheusService from './morpheus.service';
-import webhookService from './webhook.service';
+import socketService from './socket.service';
 import {
   AnalysisResponse,
   AnalysisResultResponse,
   AnalysisMetricsResponse,
-  WebhookPayload,
 } from '../models';
 
 export class AnalysisService {
@@ -91,68 +90,73 @@ export class AnalysisService {
 
       console.log(`[${analysisId}] Analysis completed in ${duration}ms`);
 
-      // Get updated analysis for webhook notification
+      // Get updated analysis for real-time notification
       const completedAnalysis = await databaseService.getAnalysisById(analysisId);
 
       if (completedAnalysis) {
-        // Notify status change webhook
-        await this.notifyWebhook('status_change', completedAnalysis, 'processing');
+        // Emit status change event
+        socketService.emitStatusChange(
+          analysisId,
+          'completed',
+          'processing',
+          {
+            analysisId: completedAnalysis.id,
+            modelName: completedAnalysis.model_name,
+            status: completedAnalysis.status,
+            result: completedAnalysis.result,
+            duration_ms: completedAnalysis.duration_ms,
+            created_at: completedAnalysis.created_at,
+            completed_at: completedAnalysis.completed_at
+          }
+        );
 
-        // Notify analysis completed webhook
-        await this.notifyWebhook('analysis_completed', completedAnalysis);
+        // Emit analysis completed event
+        socketService.emitAnalysisCompleted(analysisId, {
+          analysisId: completedAnalysis.id,
+          modelName: completedAnalysis.model_name,
+          result: completedAnalysis.result,
+          duration_ms: completedAnalysis.duration_ms,
+          created_at: completedAnalysis.created_at,
+          completed_at: completedAnalysis.completed_at
+        });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       await databaseService.updateAnalysisError(analysisId, errorMessage);
       console.error(`[${analysisId}] Analysis failed:`, errorMessage);
 
-      // Get failed analysis for webhook notification
+      // Get failed analysis for real-time notification
       const failedAnalysis = await databaseService.getAnalysisById(analysisId);
 
       if (failedAnalysis) {
-        // Notify status change webhook
-        await this.notifyWebhook('status_change', failedAnalysis, 'processing');
+        // Emit status change event
+        socketService.emitStatusChange(
+          analysisId,
+          'failed',
+          'processing',
+          {
+            analysisId: failedAnalysis.id,
+            modelName: failedAnalysis.model_name,
+            status: failedAnalysis.status,
+            error: failedAnalysis.error,
+            created_at: failedAnalysis.created_at,
+            completed_at: failedAnalysis.completed_at
+          }
+        );
 
-        // Notify analysis failed webhook
-        await this.notifyWebhook('analysis_failed', failedAnalysis);
+        // Emit analysis failed event
+        socketService.emitAnalysisFailed(analysisId, errorMessage, {
+          analysisId: failedAnalysis.id,
+          modelName: failedAnalysis.model_name,
+          error: failedAnalysis.error,
+          created_at: failedAnalysis.created_at,
+          completed_at: failedAnalysis.completed_at
+        });
       }
     } finally {
       if (metricsInterval) {
         clearInterval(metricsInterval);
       }
-    }
-  }
-
-  /**
-   * Notify webhooks of an event
-   */
-  private async notifyWebhook(
-    event: 'status_change' | 'analysis_completed' | 'analysis_failed',
-    analysis: any,
-    previousStatus?: string
-  ): Promise<void> {
-    try {
-      const payload: WebhookPayload = {
-        event,
-        analysisId: analysis.id,
-        timestamp: new Date().toISOString(),
-        data: {
-          analysisId: analysis.id,
-          modelName: analysis.model_name,
-          status: analysis.status,
-          previousStatus,
-          result: analysis.result,
-          error: analysis.error,
-          duration_ms: analysis.duration_ms,
-          created_at: analysis.created_at,
-          completed_at: analysis.completed_at,
-        },
-      };
-
-      await webhookService.notifyEvent(event, payload);
-    } catch (error) {
-      console.error(`[${analysis.id}] Error notifying webhooks:`, error);
-      // Don't throw - webhook notification failures shouldn't affect the analysis
     }
   }
 
