@@ -164,7 +164,7 @@ export default function AnalysisPage() {
               {/* File Input */}
               <div>
                 <label style={{ display: 'block', color: '#1e293b', fontWeight: '500', marginBottom: '0.5rem' }}>
-                  Archivo de Datos (PCAP jsonlines)
+                  Dataset
                 </label>
                 <input
                   type="file"
