@@ -391,7 +391,7 @@ export default function AnalysisDetail() {
                               stroke="#64748b"
                               tick={{ fill: '#64748b', fontSize: 11 }}
                               tickFormatter={(_value, index) => {
-                                const totalPoints = analysis.metrics.gpu_usage.length;
+                                const totalPoints = analysis.metrics?.gpu_usage?.length || 1;
                                 const interval = Math.ceil(totalPoints / 5);
                                 if (index % interval === 0) {
                                   return `${Math.floor((index / totalPoints) * 100)}%`;
@@ -468,7 +468,7 @@ export default function AnalysisDetail() {
                               stroke="#64748b"
                               tick={{ fill: '#64748b', fontSize: 11 }}
                               tickFormatter={(_value, index) => {
-                                const totalPoints = analysis.metrics.gpu_memory.length;
+                                const totalPoints = analysis.metrics?.gpu_memory?.length || 1;
                                 const interval = Math.ceil(totalPoints / 5);
                                 if (index % interval === 0) {
                                   return `${Math.floor((index / totalPoints) * 100)}%`;
@@ -544,7 +544,7 @@ export default function AnalysisDetail() {
                               stroke="#64748b"
                               tick={{ fill: '#64748b', fontSize: 11 }}
                               tickFormatter={(_value, index) => {
-                                const totalPoints = analysis.metrics.cpu_usage.length;
+                                const totalPoints = analysis.metrics?.cpu_usage?.length || 1;
                                 const interval = Math.ceil(totalPoints / 5);
                                 if (index % interval === 0) {
                                   return `${Math.floor((index / totalPoints) * 100)}%`;
@@ -621,7 +621,7 @@ export default function AnalysisDetail() {
                               stroke="#64748b"
                               tick={{ fill: '#64748b', fontSize: 11 }}
                               tickFormatter={(_value, index) => {
-                                const totalPoints = analysis.metrics.ram_mb.length;
+                                const totalPoints = analysis.metrics?.ram_mb?.length || 1;
                                 const interval = Math.ceil(totalPoints / 5);
                                 if (index % interval === 0) {
                                   return `${Math.floor((index / totalPoints) * 100)}%`;
