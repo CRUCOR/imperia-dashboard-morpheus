@@ -14,6 +14,16 @@ import type { Analysis } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+const getStatusLabel = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    'pending': 'Pendiente',
+    'processing': 'Procesando',
+    'completed': 'Completado',
+    'failed': 'Fallido'
+  };
+  return statusMap[status] || status;
+};
+
 export default function Files() {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,8 +49,8 @@ export default function Files() {
   };
 
   const handleViewAnalysis = (analysisId: string) => {
-    // Navigate to Analysis page and open detail
-    navigate('/analisis', { state: { analysisId } });
+    // Navigate directly to analysis detail view
+    navigate(`/analisis/${analysisId}`);
   };
 
   if (loading && analyses.length === 0) {
@@ -140,7 +150,7 @@ export default function Files() {
                       {analysis.modelName}
                     </td>
                     <td style={{ padding: '1rem 0.75rem' }}>
-                      <StatusBadge status={analysis.status} />
+                      <StatusBadge status={analysis.status} label={getStatusLabel(analysis.status)} />
                     </td>
                     <td style={{ padding: '1rem 0.75rem', color: '#64748b', fontSize: '0.875rem' }}>
                       {(analysis.fileMetadata as any)?.file_size_mb

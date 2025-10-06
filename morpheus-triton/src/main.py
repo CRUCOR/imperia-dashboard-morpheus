@@ -204,7 +204,7 @@ async def predict(
                 "prediction": {
                     "is_mining": is_mining,
                     "mining_probability": round(anomaly_probability, 4),
-                    "benign_probability": round(1.0 - anomaly_probability, 4),
+                    "regular_probability": round(1.0 - anomaly_probability, 4),
                     "confidence": round(anomaly_probability if is_mining else (1.0 - anomaly_probability), 4),
                     "anomaly_score": round(anomaly_probability, 4),
                     "detected_patterns": []
@@ -239,7 +239,7 @@ async def predict(
 
         # Calculate statistics from prediction results
         num_mining = sum(1 for p in predictions if p["prediction"]["is_mining"])
-        num_benign = num_rows - num_mining
+        num_regular = num_rows - num_mining
         
         # Identify suspicious IPs (IPs with high mining activity)
         ip_mining_counts = {}
@@ -258,7 +258,7 @@ async def predict(
             "statistics": {
                 "total_packets": num_rows,
                 "mining_detected": num_mining,
-                "benign_traffic": num_benign,
+                "regular_traffic": num_regular,
                 "mining_rate": round(num_mining / num_rows * 100, 2) if num_rows > 0 else 0,
                 "suspicious_ips": [{"ip": ip, "mining_packets": count} for ip, count in suspicious_ips]
             },

@@ -4,9 +4,10 @@
 
 interface StatusBadgeProps {
   status: 'healthy' | 'unhealthy' | 'unknown' | 'pending' | 'processing' | 'completed' | 'failed';
+  label?: string;
 }
 
-export default function StatusBadge({ status }: StatusBadgeProps) {
+export default function StatusBadge({ status, label }: StatusBadgeProps) {
   const getColor = () => {
     switch (status) {
       case 'healthy':
@@ -36,7 +37,7 @@ export default function StatusBadge({ status }: StatusBadgeProps) {
       color: colors.text,
       textTransform: 'capitalize'
     }}>
-      {status}
+      {label || status}
     </span>
   );
 }

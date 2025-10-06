@@ -34,6 +34,7 @@ export interface Analysis {
   analysisId: string;
   modelName: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
+  statusLabel?: 'Pendiente' | 'Procesando' | 'Completado' | 'Fallido';
   createdAt: string;
   completedAt?: string;
   fileMetadata?: FileMetadata;
