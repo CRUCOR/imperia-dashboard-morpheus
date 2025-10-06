@@ -12,31 +12,6 @@ const options: swaggerJsdoc.Options = {
     info: {
       title: 'Imperia Dashboard Morpheus API',
       version: '1.0.0',
-      description: `
-Backend API for the Imperia Dashboard Morpheus platform - AI-powered medical image analysis using ABP (Automated Breast Pathology) models.
-
-## Features
-
-- **Image Analysis**: Upload medical images for automated analysis using ML models
-- **Real-time Metrics**: Monitor GPU, CPU, and RAM usage during analysis
-- **Service Health**: Check the status of all platform services
-- **Results Tracking**: Retrieve analysis results and historical metrics
-
-## Workflow
-
-1. **Upload Image**: POST /analyze with an image file
-2. **Processing**: The system processes the image using the ABP model
-3. **Metrics Collection**: System metrics are collected every 5 seconds during processing
-4. **Results**: Retrieve results using GET /results/{analysisId}
-
-## Authentication
-
-Currently, the API does not require authentication. This will be added in future versions.
-      `,
-      contact: {
-        name: 'API Support',
-        email: 'support@imperia.ai',
-      },
       license: {
         name: 'MIT',
         url: 'https://opensource.org/licenses/MIT',
@@ -46,20 +21,6 @@ Currently, the API does not require authentication. This will be added in future
       {
         url: `http://localhost:${config.port}`,
         description: 'Development server',
-      },
-      {
-        url: 'http://backend-service:3000',
-        description: 'Kubernetes cluster (internal)',
-      },
-    ],
-    tags: [
-      {
-        name: 'Analysis',
-        description: 'Medical image analysis operations',
-      },
-      {
-        name: 'Monitoring',
-        description: 'System monitoring and health check endpoints',
       },
     ],
     components: {
