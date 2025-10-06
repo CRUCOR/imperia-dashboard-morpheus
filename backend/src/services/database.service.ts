@@ -4,7 +4,7 @@
  */
 
 import { pool } from '../config/database';
-import { Analysis, AnalysisMetric } from '../models';
+import { Analysis, AnalysisMetric, Webhook, WebhookDelivery, CreateWebhookRequest } from '../models';
 
 export class DatabaseService {
   /**
@@ -118,6 +118,118 @@ export class DatabaseService {
        ORDER BY created_at DESC
        LIMIT $1 OFFSET $2`,
       [limit, offset]
+    );
+
+    return result.rows;
+  }
+
+  // ==================== WEBHOOK METHODS ====================
+
+  /**
+   * Create a new webhook
+   */
+  async createWebhook(data: CreateWebhookRequest): Promise<Webhook> {
+    const result = await pool.query(
+      `INSERT INTO webhooks (url, events, secret, active)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [data.url, data.events, data.secret || null, true]
+    );
+
+    return result.rows[0];
+  }
+
+  /**
+   * Get all active webhooks
+   */
+  async getActiveWebhooks(): Promise<Webhook[]> {
+    const result = await pool.query(
+      `SELECT * FROM webhooks WHERE active = true`
+    );
+
+    return result.rows;
+  }
+
+  /**
+   * Get webhooks by event type
+   */
+  async getWebhooksByEvent(event: string): Promise<Webhook[]> {
+    const result = await pool.query(
+      `SELECT * FROM webhooks
+       WHERE active = true AND $1 = ANY(events)`,
+      [event]
+    );
+
+    return result.rows;
+  }
+
+  /**
+   * Get webhook by ID
+   */
+  async getWebhookById(id: number): Promise<Webhook | null> {
+    const result = await pool.query(
+      `SELECT * FROM webhooks WHERE id = $1`,
+      [id]
+    );
+
+    return result.rows.length > 0 ? result.rows[0] : null;
+  }
+
+  /**
+   * Delete webhook
+   */
+  async deleteWebhook(id: number): Promise<boolean> {
+    const result = await pool.query(
+      `DELETE FROM webhooks WHERE id = $1`,
+      [id]
+    );
+
+    return result.rowCount !== null && result.rowCount > 0;
+  }
+
+  /**
+   * Update webhook active status
+   */
+  async updateWebhookStatus(id: number, active: boolean): Promise<void> {
+    await pool.query(
+      `UPDATE webhooks
+       SET active = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [active, id]
+    );
+  }
+
+  /**
+   * Log webhook delivery
+   */
+  async logWebhookDelivery(
+    webhookId: number,
+    analysisId: string,
+    event: string,
+    payload: any,
+    statusCode?: number,
+    responseBody?: string,
+    success: boolean = false,
+    error?: string
+  ): Promise<void> {
+    await pool.query(
+      `INSERT INTO webhook_deliveries
+       (webhook_id, analysis_id, event, payload, status_code, response_body, success, error)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [webhookId, analysisId, event, JSON.stringify(payload), statusCode, responseBody, success, error]
+    );
+  }
+
+  /**
+   * Get webhook deliveries for a webhook
+   */
+  async getWebhookDeliveries(webhookId: number, limit: number = 50): Promise<WebhookDelivery[]> {
+    const result = await pool.query(
+      `SELECT * FROM webhook_deliveries
+       WHERE webhook_id = $1
+       ORDER BY delivered_at DESC
+       LIMIT $2`,
+      [webhookId, limit]
     );
 
     return result.rows;

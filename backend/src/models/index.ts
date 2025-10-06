@@ -5,3 +5,4 @@
 
 export * from './analysis.model';
 export * from './service.model';
+export * from './webhook.model';
