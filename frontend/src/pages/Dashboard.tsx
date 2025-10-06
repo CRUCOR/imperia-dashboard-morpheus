@@ -14,6 +14,19 @@ import type { DashboardStats, GpuUsageHistory } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+const getStatusLabel = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    'pending': 'Pendiente',
+    'processing': 'Procesando',
+    'completed': 'Completado',
+    'failed': 'Fallido',
+    'healthy': 'Saludable',
+    'unhealthy': 'No Saludable',
+    'unknown': 'Desconocido'
+  };
+  return statusMap[status] || status;
+};
+
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [gpuHistory, setGpuHistory] = useState<GpuUsageHistory | null>(null);
@@ -317,7 +330,7 @@ export default function Dashboard() {
               border: '1px solid #e2e8f0'
             }}>
               <span style={{ color: '#1e293b', fontWeight: '500' }}>Backend</span>
-              <StatusBadge status={stats.services.backend.status} />
+              <StatusBadge status={stats.services.backend.status} label={getStatusLabel(stats.services.backend.status)} />
             </div>
             <div style={{ 
               display: 'flex', 
@@ -329,7 +342,7 @@ export default function Dashboard() {
               border: '1px solid #e2e8f0'
             }}>
               <span style={{ color: '#1e293b', fontWeight: '500' }}>PostgreSQL</span>
-              <StatusBadge status={stats.services.postgres.status} />
+              <StatusBadge status={stats.services.postgres.status} label={getStatusLabel(stats.services.postgres.status)} />
             </div>
             <div style={{ 
               display: 'flex', 
@@ -341,7 +354,7 @@ export default function Dashboard() {
               border: '1px solid #e2e8f0'
             }}>
               <span style={{ color: '#1e293b', fontWeight: '500' }}>Morpheus/Triton</span>
-              <StatusBadge status={stats.services.morpheus.status} />
+              <StatusBadge status={stats.services.morpheus.status} label={getStatusLabel(stats.services.morpheus.status)} />
             </div>
           </div>
         </Card>
@@ -377,7 +390,7 @@ export default function Dashboard() {
                     }}>
                       {analysis.modelName}
                     </span>
-                    <StatusBadge status={analysis.status} />
+                    <StatusBadge status={analysis.status} label={getStatusLabel(analysis.status)} />
                   </div>
                   <p style={{ 
                     color: '#64748b', 
