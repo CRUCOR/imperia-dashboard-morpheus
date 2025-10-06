@@ -136,6 +136,24 @@ export class AnalysisService {
       metrics,
     };
   }
+
+  /**
+   * List all analyses with pagination
+   */
+  async listAnalyses(limit: number = 50, offset: number = 0): Promise<AnalysisResultResponse[]> {
+    const analyses = await databaseService.listAnalyses(limit, offset);
+
+    return analyses.map(analysis => ({
+      analysisId: analysis.id,
+      modelName: analysis.model_name,
+      status: analysis.status,
+      result: analysis.result,
+      duration_ms: analysis.duration_ms,
+      error: analysis.error,
+      created_at: analysis.created_at,
+      completed_at: analysis.completed_at,
+    }));
+  }
 }
 
 export default new AnalysisService();

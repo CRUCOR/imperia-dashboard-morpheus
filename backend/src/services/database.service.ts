@@ -108,6 +108,20 @@ export class DatabaseService {
       return false;
     }
   }
+
+  /**
+   * List analyses with pagination
+   */
+  async listAnalyses(limit: number, offset: number): Promise<Analysis[]> {
+    const result = await pool.query(
+      `SELECT * FROM analyses
+       ORDER BY created_at DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    return result.rows;
+  }
 }
 
 export default new DatabaseService();

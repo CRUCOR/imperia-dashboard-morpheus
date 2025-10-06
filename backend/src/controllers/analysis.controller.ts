@@ -85,6 +85,34 @@ export class AnalysisController {
       });
     }
   }
+
+  /**
+   * GET /results
+   * List all analyses with pagination
+   */
+  async listAnalyses(req: Request, res: Response): Promise<void> {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const results = await analysisService.listAnalyses(limit, offset);
+
+      res.status(200).json({
+        results,
+        pagination: {
+          limit,
+          offset,
+          count: results.length,
+        },
+      });
+    } catch (error) {
+      console.error('Error in listAnalyses:', error);
+      res.status(500).json({
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
 }
 
 export default new AnalysisController();

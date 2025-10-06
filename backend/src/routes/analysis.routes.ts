@@ -11,6 +11,86 @@ const router = Router();
 
 /**
  * @swagger
+ * /results:
+ *   get:
+ *     summary: List all analyses
+ *     description: Retrieve a paginated list of all analyses
+ *     tags: [Analysis]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *         description: Maximum number of results to return
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Number of results to skip
+ *     responses:
+ *       200:
+ *         description: List of analyses retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 results:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       analysisId:
+ *                         type: string
+ *                       modelName:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *                       duration_ms:
+ *                         type: number
+ *                       created_at:
+ *                         type: string
+ *                         format: date-time
+ *                       completed_at:
+ *                         type: string
+ *                         format: date-time
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     limit:
+ *                       type: integer
+ *                     offset:
+ *                       type: integer
+ *                     count:
+ *                       type: integer
+ *             examples:
+ *               success:
+ *                 summary: List of analyses
+ *                 value:
+ *                   results:
+ *                     - analysisId: analysis_1728168000_abc123
+ *                       modelName: abp
+ *                       status: completed
+ *                       duration_ms: 2500
+ *                       created_at: "2025-10-05T10:00:00.000Z"
+ *                       completed_at: "2025-10-05T10:00:02.500Z"
+ *                     - analysisId: analysis_1728168001_def456
+ *                       modelName: abp
+ *                       status: processing
+ *                       created_at: "2025-10-05T10:05:00.000Z"
+ *                   pagination:
+ *                     limit: 50
+ *                     offset: 0
+ *                     count: 2
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/results', analysisController.listAnalyses);
+
+/**
+ * @swagger
  * /analyze:
  *   post:
  *     summary: Create and start a new analysis
