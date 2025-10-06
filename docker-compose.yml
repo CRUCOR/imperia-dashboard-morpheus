@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: imperia-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-imperia_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-imperia_password}
+      POSTGRES_DB: ${DB_NAME:-imperia_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - imperia-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-imperia_user} -d ${DB_NAME:-imperia_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # Morpheus/Triton Service (ML Model)
+  morpheus-triton:
+    build:
+      context: ./morpheus-triton
+      dockerfile: Dockerfile
+    container_name: imperia-morpheus
+    environment:
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    networks:
+      - imperia-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: imperia-backend
+    environment:
+      PORT: 3000
+      NODE_ENV: ${NODE_ENV:-development}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-imperia_db}
+      DB_USER: ${DB_USER:-imperia_user}
+      DB_PASSWORD: ${DB_PASSWORD:-imperia_password}
+      MORPHEUS_SERVICE_URL: http://morpheus-triton:8000
+    ports:
+      - "3000:3000"
+    networks:
+      - imperia-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      morpheus-triton:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
+
+  # Frontend (Optional - can be added later)
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: imperia-frontend
+  #   ports:
+  #     - "8080:80"
+  #   networks:
+  #     - imperia-network
+  #   depends_on:
+  #     - backend
+  #   restart: unless-stopped
+
+networks:
+  imperia-network:
+    driver: bridge
+    name: imperia-network
+
+volumes:
+  postgres_data:
+    name: imperia-postgres-data
