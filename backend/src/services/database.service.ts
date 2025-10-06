@@ -4,17 +4,40 @@
  */
 
 import { pool } from '../config/database';
-import { Analysis, AnalysisMetric } from '../models';
+import { Analysis, AnalysisMetric, FileMetadata, ABPParameters } from '../models';
 
 export class DatabaseService {
   /**
    * Create a new analysis record
    */
-  async createAnalysis(id: string, modelName: string): Promise<void> {
+  async createAnalysis(
+    id: string,
+    modelName: string,
+    fileMetadata?: FileMetadata,
+    modelParameters?: ABPParameters
+  ): Promise<void> {
     await pool.query(
-      `INSERT INTO analyses (id, model_name, status, created_at)
-       VALUES ($1, $2, $3, NOW())`,
-      [id, modelName, 'processing']
+      `INSERT INTO analyses (id, model_name, status, file_metadata, model_parameters, created_at)
+       VALUES ($1, $2, $3, $4, $5, NOW())`,
+      [
+        id,
+        modelName,
+        'processing',
+        fileMetadata ? JSON.stringify(fileMetadata) : null,
+        modelParameters ? JSON.stringify(modelParameters) : null
+      ]
+    );
+  }
+
+  /**
+   * Update analysis with input data
+   */
+  async updateAnalysisInput(id: string, inputData: any): Promise<void> {
+    await pool.query(
+      `UPDATE analyses
+       SET input_data = $1
+       WHERE id = $2`,
+      [JSON.stringify(inputData), id]
     );
   }
 

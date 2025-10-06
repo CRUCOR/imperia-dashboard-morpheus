@@ -94,13 +94,15 @@ async def get_metrics():
 @app.post("/predict")
 async def predict(
     file: UploadFile = File(...),
-    model: str = Form("abp"),
-    parameters: str = Form("{}"),
-    analysisId: Optional[str] = Form(None)
+    model_name: str = Form("abp"),
+    analysisId: Optional[str] = Form(None),
+    pipeline_batch_size: Optional[int] = Form(None),
+    model_max_batch_size: Optional[int] = Form(None),
+    num_threads: Optional[int] = Form(None)
 ):
     """
-    Mock ABP model prediction endpoint
-    Simulates processing and returns mock results
+    ABP (Anomalous Behavior Profiling) model prediction endpoint
+    Processes files with configurable batch sizes and threading
     """
     start_time = time.time()
 
@@ -110,8 +112,11 @@ async def predict(
         file_size_mb = len(file_content) / (1024 ** 2)
 
         print(f"[{analysisId}] Processing file: {file.filename} ({file_size_mb:.2f} MB)")
-        print(f"[{analysisId}] Model: {model}")
-        print(f"[{analysisId}] Parameters: {parameters}")
+        print(f"[{analysisId}] Model: {model_name}")
+        print(f"[{analysisId}] ABP Parameters:")
+        print(f"  - pipeline_batch_size: {pipeline_batch_size}")
+        print(f"  - model_max_batch_size: {model_max_batch_size}")
+        print(f"  - num_threads: {num_threads}")
 
         # Simulate processing time (2-5 seconds)
         processing_time = random.uniform(2, 5)
@@ -121,10 +126,10 @@ async def predict(
             update_metrics(processing=True)
             time.sleep(0.5)
 
-        # Mock ABP analysis result
+        # Mock ABP analysis result with parameters
         mock_result = {
             "analysisId": analysisId,
-            "model": model,
+            "model": model_name,
             "predictions": [
                 {
                     "class": "benign",
@@ -151,7 +156,12 @@ async def predict(
                 "file_name": file.filename,
                 "file_size_mb": file_size_mb,
                 "processing_time_sec": time.time() - start_time,
-                "gpu_used": GPU_AVAILABLE
+                "gpu_used": GPU_AVAILABLE,
+                "abp_parameters": {
+                    "pipeline_batch_size": pipeline_batch_size,
+                    "model_max_batch_size": model_max_batch_size,
+                    "num_threads": num_threads
+                }
             }
         }
 

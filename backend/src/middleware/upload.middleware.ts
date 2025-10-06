@@ -12,7 +12,7 @@ const upload = multer({
     fileSize: 100 * 1024 * 1024, // 100MB limit
   },
   fileFilter: (req, file, cb) => {
-    // Accept images and common medical imaging formats
+    // Accept images, medical imaging formats, and jsonlines
     const allowedMimeTypes = [
       'image/jpeg',
       'image/jpg',
@@ -22,12 +22,19 @@ const upload = multer({
       'image/tiff',
       'application/dicom',
       'application/octet-stream',
+      'application/json',
+      'text/plain',
+      'application/x-ndjson',
     ];
 
-    if (allowedMimeTypes.includes(file.mimetype)) {
+    // Also accept .jsonlines extension
+    const allowedExtensions = ['.jsonlines', '.jsonl', '.ndjson'];
+    const hasAllowedExtension = allowedExtensions.some(ext => file.originalname.toLowerCase().endsWith(ext));
+
+    if (allowedMimeTypes.includes(file.mimetype) || hasAllowedExtension) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only images and DICOM files are allowed.'));
+      cb(new Error('Invalid file type. Only images, DICOM, and .jsonlines files are allowed.'));
     }
   },
 });

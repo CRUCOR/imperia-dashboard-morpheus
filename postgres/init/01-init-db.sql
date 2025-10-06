@@ -5,9 +5,12 @@ CREATE TABLE IF NOT EXISTS analyses (
     id VARCHAR(255) PRIMARY KEY,
     model_name VARCHAR(100) NOT NULL,
     status VARCHAR(50) NOT NULL,
+    input_data JSONB,
     result JSONB,
     duration_ms INTEGER,
     error TEXT,
+    file_metadata JSONB,
+    model_parameters JSONB,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     completed_at TIMESTAMP
 );

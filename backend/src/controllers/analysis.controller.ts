@@ -18,9 +18,25 @@ export class AnalysisController {
         return;
       }
 
-      const { modelName = 'abp', parameters = '{}' } = req.body;
+      const {
+        model_name = 'abp',
+        pipeline_batch_size,
+        model_max_batch_size,
+        num_threads
+      } = req.body;
 
-      const result = await analysisService.createAnalysis(req.file, modelName, parameters);
+      // Parse and validate numeric parameters
+      const pipelineBatchSize = pipeline_batch_size ? parseInt(pipeline_batch_size) : undefined;
+      const modelMaxBatchSize = model_max_batch_size ? parseInt(model_max_batch_size) : undefined;
+      const numThreads = num_threads ? parseInt(num_threads) : undefined;
+
+      const result = await analysisService.createAnalysis(
+        req.file,
+        model_name,
+        pipelineBatchSize,
+        modelMaxBatchSize,
+        numThreads
+      );
 
       res.status(202).json(result);
     } catch (error) {

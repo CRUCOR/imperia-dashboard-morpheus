@@ -10,6 +10,8 @@ import {
   AnalysisResponse,
   AnalysisResultResponse,
   AnalysisMetricsResponse,
+  FileMetadata,
+  ABPParameters,
 } from '../models';
 
 export class AnalysisService {
@@ -23,20 +25,110 @@ export class AnalysisService {
   }
 
   /**
+   * Extract file metadata
+   */
+  private extractFileMetadata(file: Express.Multer.File): FileMetadata {
+    return {
+      file_name: file.originalname,
+      file_size_bytes: file.size,
+      file_size_mb: file.size / (1024 * 1024),
+      file_type: file.mimetype
+    };
+  }
+
+  /**
+   * Parse jsonlines input file
+   */
+  private parseJsonlines(buffer: Buffer): any[] {
+    try {
+      const content = buffer.toString('utf-8');
+      const lines = content.trim().split('\n');
+      const parsed = lines
+        .filter(line => line.trim().length > 0)
+        .map(line => JSON.parse(line));
+
+      return parsed;
+    } catch (error) {
+      console.error('Error parsing jsonlines:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Extract input data from file
+   */
+  private async extractInputData(file: Express.Multer.File): Promise<any> {
+    // Check if file is jsonlines
+    if (file.originalname.toLowerCase().endsWith('.jsonlines') ||
+        file.originalname.toLowerCase().endsWith('.jsonl') ||
+        file.originalname.toLowerCase().endsWith('.ndjson')) {
+      const parsed = this.parseJsonlines(file.buffer);
+      return {
+        type: 'jsonlines',
+        num_rows: parsed.length,
+        data: parsed.slice(0, 100) // Store first 100 rows for preview
+      };
+    }
+
+    // For other file types, store basic info
+    return {
+      type: 'binary',
+      preview: 'Binary file content not displayed'
+    };
+  }
+
+  /**
    * Create and start a new analysis
    */
   async createAnalysis(
     file: Express.Multer.File,
     modelName: string = 'abp',
-    parameters: string = '{}'
+    pipelineBatchSize?: number,
+    modelMaxBatchSize?: number,
+    numThreads?: number
   ): Promise<AnalysisResponse> {
     const analysisId = this.generateAnalysisId();
 
+    // Extract file metadata
+    const fileMetadata = this.extractFileMetadata(file);
+
+    // Add num_rows to metadata if jsonlines
+    if (file.originalname.toLowerCase().endsWith('.jsonlines') ||
+        file.originalname.toLowerCase().endsWith('.jsonl') ||
+        file.originalname.toLowerCase().endsWith('.ndjson')) {
+      const parsed = this.parseJsonlines(file.buffer);
+      (fileMetadata as any).num_rows = parsed.length;
+    }
+
+    // Build model parameters
+    const modelParameters: ABPParameters | undefined =
+      pipelineBatchSize !== undefined || modelMaxBatchSize !== undefined || numThreads !== undefined
+        ? {
+            pipeline_batch_size: pipelineBatchSize,
+            model_max_batch_size: modelMaxBatchSize,
+            num_threads: numThreads
+          }
+        : undefined;
+
     // Create analysis record in database
-    await databaseService.createAnalysis(analysisId, modelName);
+    await databaseService.createAnalysis(analysisId, modelName, fileMetadata, modelParameters);
+
+    // Extract and store input data asynchronously
+    this.extractInputData(file).then(inputData => {
+      databaseService.updateAnalysisInput(analysisId, inputData).catch(err => {
+        console.error(`[${analysisId}] Error storing input data:`, err);
+      });
+    });
 
     // Start async processing
-    this.processAnalysis(analysisId, file, modelName, parameters).catch((error) => {
+    this.processAnalysis(
+      analysisId,
+      file,
+      modelName,
+      pipelineBatchSize,
+      modelMaxBatchSize,
+      numThreads
+    ).catch((error) => {
       console.error(`[${analysisId}] Error processing analysis:`, error);
     });
 
@@ -54,15 +146,18 @@ export class AnalysisService {
     analysisId: string,
     file: Express.Multer.File,
     modelName: string,
-    parameters: string
+    pipelineBatchSize?: number,
+    modelMaxBatchSize?: number,
+    numThreads?: number
   ): Promise<void> {
     const startTime = Date.now();
     let metricsInterval: NodeJS.Timeout | null = null;
 
     try {
       console.log(`[${analysisId}] Starting analysis with model: ${modelName}`);
+      console.log(`[${analysisId}] Parameters: pipeline_batch_size=${pipelineBatchSize}, model_max_batch_size=${modelMaxBatchSize}, num_threads=${numThreads}`);
 
-      // Start collecting metrics every 5 seconds
+      // Start collecting metrics every 1 second
       metricsInterval = setInterval(async () => {
         try {
           const metrics = await morpheusService.getMetrics();
@@ -79,10 +174,17 @@ export class AnalysisService {
         } catch (error) {
           console.error(`[${analysisId}] Error collecting metrics:`, error);
         }
-      }, 5000);
+      }, 1000);
 
-      // Send to Morpheus/Triton
-      const result = await morpheusService.predict(file, modelName, parameters, analysisId);
+      // Send to Morpheus/Triton with ABP parameters
+      const result = await morpheusService.predict(
+        file,
+        modelName,
+        analysisId,
+        pipelineBatchSize,
+        modelMaxBatchSize,
+        numThreads
+      );
       const duration = Date.now() - startTime;
 
       // Update analysis with result
@@ -174,9 +276,12 @@ export class AnalysisService {
       analysisId: analysis.id,
       modelName: analysis.model_name,
       status: analysis.status,
+      input_data: analysis.input_data,
       result: analysis.result,
       duration_ms: analysis.duration_ms,
       error: analysis.error,
+      file_metadata: analysis.file_metadata,
+      model_parameters: analysis.model_parameters,
       created_at: analysis.created_at,
       completed_at: analysis.completed_at,
     };
@@ -208,9 +313,12 @@ export class AnalysisService {
       analysisId: analysis.id,
       modelName: analysis.model_name,
       status: analysis.status,
+      input_data: analysis.input_data,
       result: analysis.result,
       duration_ms: analysis.duration_ms,
       error: analysis.error,
+      file_metadata: analysis.file_metadata,
+      model_parameters: analysis.model_parameters,
       created_at: analysis.created_at,
       completed_at: analysis.completed_at,
     }));

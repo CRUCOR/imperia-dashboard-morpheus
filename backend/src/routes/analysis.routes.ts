@@ -94,7 +94,7 @@ router.get('/results', analysisController.listAnalyses);
  * /analyze:
  *   post:
  *     summary: Create and start a new analysis
- *     description: Upload a file and start an analysis using the specified model (default ABP)
+ *     description: Upload a file and start an ABP (Anomalous Behavior Profiling) analysis with configurable parameters
  *     tags: [Analysis]
  *     requestBody:
  *       required: true
@@ -108,30 +108,38 @@ router.get('/results', analysisController.listAnalyses);
  *               file:
  *                 type: string
  *                 format: binary
- *                 description: Image file to analyze (max 100MB)
- *               modelName:
+ *                 description: Input file to analyze (max 100MB)
+ *               model_name:
  *                 type: string
  *                 default: abp
  *                 description: Name of the model to use for analysis
  *                 example: abp
- *               parameters:
- *                 type: string
- *                 default: "{}"
- *                 description: JSON string with model parameters
- *                 example: '{"threshold": 0.5, "max_detections": 10}'
+ *               pipeline_batch_size:
+ *                 type: integer
+ *                 description: Batch size for the pipeline processing
+ *                 example: 256
+ *               model_max_batch_size:
+ *                 type: integer
+ *                 description: Maximum batch size for the model
+ *                 example: 32
+ *               num_threads:
+ *                 type: integer
+ *                 description: Number of threads for parallel processing
+ *                 example: 8
  *           examples:
  *             basic:
- *               summary: Basic analysis request
+ *               summary: Basic ABP analysis
  *               value:
  *                 file: (binary)
- *                 modelName: abp
- *                 parameters: '{}'
- *             advanced:
- *               summary: Analysis with custom parameters
+ *                 model_name: abp
+ *             optimized:
+ *               summary: ABP analysis with optimized parameters
  *               value:
  *                 file: (binary)
- *                 modelName: abp
- *                 parameters: '{"threshold": 0.7, "max_detections": 5}'
+ *                 model_name: abp
+ *                 pipeline_batch_size: 256
+ *                 model_max_batch_size: 32
+ *                 num_threads: 8
  *     responses:
  *       202:
  *         description: Analysis started successfully

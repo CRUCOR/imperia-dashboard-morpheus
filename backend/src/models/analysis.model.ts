@@ -7,11 +7,29 @@ export interface Analysis {
   id: string;
   model_name: string;
   status: 'processing' | 'completed' | 'failed';
+  input_data?: any;
   result?: any;
   duration_ms?: number;
   error?: string;
+  file_metadata?: FileMetadata;
+  model_parameters?: ABPParameters;
   created_at: Date;
   completed_at?: Date;
+}
+
+export interface FileMetadata {
+  file_name: string;
+  file_size_bytes: number;
+  file_size_mb: number;
+  num_rows?: number;
+  num_columns?: number;
+  file_type?: string;
+}
+
+export interface ABPParameters {
+  pipeline_batch_size?: number;
+  model_max_batch_size?: number;
+  num_threads?: number;
 }
 
 export interface AnalysisMetric {
@@ -39,7 +57,9 @@ export interface GlobalMetric {
 export interface CreateAnalysisRequest {
   file: Express.Multer.File;
   modelName?: string;
-  parameters?: string;
+  pipelineBatchSize?: number;
+  modelMaxBatchSize?: number;
+  numThreads?: number;
 }
 
 export interface AnalysisResponse {
@@ -52,9 +72,12 @@ export interface AnalysisResultResponse {
   analysisId: string;
   modelName: string;
   status: string;
+  input_data?: any;
   result?: any;
   duration_ms?: number;
   error?: string;
+  file_metadata?: FileMetadata;
+  model_parameters?: ABPParameters;
   created_at: Date;
   completed_at?: Date;
 }
