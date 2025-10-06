@@ -43,6 +43,8 @@ export class DatabaseService {
 
   /**
    * Update analysis with result
+   * Stores statistics and metadata in analyses table
+   * Predictions are stored separately in predictions table to avoid JSONB 256MB limit
    */
   async updateAnalysisResult(
     id: string,
@@ -50,12 +52,148 @@ export class DatabaseService {
     result: any,
     duration: number
   ): Promise<void> {
+    // Store only statistics and metadata in analyses table
+    const resultForDb = {
+      analysisId: result.analysisId,
+      model: result.model,
+      num_rows: result.num_rows,
+      statistics: result.statistics,
+      metadata: result.metadata,
+      predictions_stored_separately: true
+    };
+
     await pool.query(
       `UPDATE analyses
        SET status = $1, result = $2, duration_ms = $3, completed_at = NOW()
        WHERE id = $4`,
-      [status, JSON.stringify(result), duration, id]
+      [status, JSON.stringify(resultForDb), duration, id]
     );
+  }
+
+  /**
+   * Insert predictions in batch (efficient bulk insert)
+   * Uses batch inserts with 1000 predictions per query for optimal performance
+   */
+  async insertPredictionsBatch(
+    analysisId: string,
+    predictions: any[]
+  ): Promise<void> {
+    if (predictions.length === 0) return;
+
+    const batchSize = 1000;
+    const totalBatches = Math.ceil(predictions.length / batchSize);
+
+    console.log(`[${analysisId}] Inserting ${predictions.length} predictions in ${totalBatches} batches...`);
+
+    for (let i = 0; i < predictions.length; i += batchSize) {
+      const batch = predictions.slice(i, i + batchSize);
+      const batchNum = Math.floor(i / batchSize) + 1;
+
+      // Build VALUES clause for batch insert
+      const values: any[] = [];
+      const placeholders: string[] = [];
+      let paramIndex = 1;
+
+      batch.forEach((pred) => {
+        placeholders.push(
+          `($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2}, $${paramIndex + 3}, $${paramIndex + 4}, $${paramIndex + 5}, $${paramIndex + 6}, $${paramIndex + 7}, $${paramIndex + 8})`
+        );
+        values.push(
+          analysisId,
+          pred.row_id,
+          pred.prediction.is_mining,
+          pred.prediction.mining_probability,
+          pred.prediction.regular_probability,
+          pred.prediction.confidence,
+          pred.prediction.anomaly_score,
+          JSON.stringify(pred.prediction.detected_patterns || []),
+          JSON.stringify(pred.packet_info || {})
+        );
+        paramIndex += 9;
+      });
+
+      const query = `
+        INSERT INTO predictions (
+          analysis_id, row_id, is_mining, mining_probability, regular_probability,
+          confidence, anomaly_score, detected_patterns, packet_info
+        ) VALUES ${placeholders.join(', ')}
+      `;
+
+      await pool.query(query, values);
+      
+      if (batchNum % 10 === 0 || batchNum === totalBatches) {
+        console.log(`[${analysisId}] Inserted batch ${batchNum}/${totalBatches} (${Math.min(i + batchSize, predictions.length)}/${predictions.length} predictions)`);
+      }
+    }
+
+    console.log(`[${analysisId}] ✓ All ${predictions.length} predictions inserted successfully`);
+  }
+
+  /**
+   * Get predictions for an analysis with pagination
+   */
+  async getPredictions(
+    analysisId: string,
+    limit: number = 1000,
+    offset: number = 0,
+    miningOnly: boolean = false
+  ): Promise<any[]> {
+    let query = `
+      SELECT 
+        row_id,
+        is_mining,
+        mining_probability,
+        regular_probability,
+        confidence,
+        anomaly_score,
+        detected_patterns,
+        packet_info
+      FROM predictions
+      WHERE analysis_id = $1
+    `;
+
+    const params: any[] = [analysisId];
+    let paramIndex = 2;
+
+    if (miningOnly) {
+      query += ` AND is_mining = true`;
+    }
+
+    query += ` ORDER BY row_id ASC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    params.push(limit, offset);
+
+    const result = await pool.query(query, params);
+
+    // Transform to match original prediction format
+    return result.rows.map(row => ({
+      row_id: row.row_id,
+      prediction: {
+        is_mining: row.is_mining,
+        mining_probability: row.mining_probability,
+        regular_probability: row.regular_probability,
+        confidence: row.confidence,
+        anomaly_score: row.anomaly_score,
+        detected_patterns: row.detected_patterns
+      },
+      packet_info: row.packet_info
+    }));
+  }
+
+  /**
+   * Get total predictions count for an analysis
+   */
+  async getPredictionsCount(
+    analysisId: string,
+    miningOnly: boolean = false
+  ): Promise<number> {
+    let query = 'SELECT COUNT(*) as count FROM predictions WHERE analysis_id = $1';
+    
+    if (miningOnly) {
+      query += ' AND is_mining = true';
+    }
+
+    const result = await pool.query(query, [analysisId]);
+    return parseInt(result.rows[0].count);
   }
 
   /**

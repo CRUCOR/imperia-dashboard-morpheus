@@ -351,51 +351,16 @@ async def predict(
         
         print(f"[{analysisId}] ═══════════════════════════")
 
-        # Optimize result size to avoid PostgreSQL JSONB 256MB limit
-        # For large files, only include a sample of predictions:
-        # - First 1000 packets
-        # - Last 1000 packets  
-        # - All mining detections (up to 10,000)
-        # This keeps the result manageable while preserving important data
-        
-        mining_predictions = [p for p in predictions if p["prediction"]["is_mining"]]
-        
-        if num_rows > 10000:  # Large file - use sampling
-            print(f"[{analysisId}] ℹ️  Large dataset detected. Using smart sampling for result optimization.")
-            print(f"[{analysisId}]    - Including first 1,000 packets")
-            print(f"[{analysisId}]    - Including last 1,000 packets")
-            print(f"[{analysisId}]    - Including all mining detections: {len(mining_predictions):,}")
-            
-            sampled_predictions = (
-                predictions[:1000] +  # First 1000
-                predictions[-1000:] +  # Last 1000
-                mining_predictions[:10000]  # Up to 10k mining detections
-            )
-            
-            # Remove duplicates while preserving order
-            seen_ids = set()
-            final_predictions = []
-            for p in sampled_predictions:
-                if p["row_id"] not in seen_ids:
-                    seen_ids.add(p["row_id"])
-                    final_predictions.append(p)
-            
-            result_predictions = sorted(final_predictions, key=lambda x: x["row_id"])
-            print(f"[{analysisId}]    - Final result size: {len(result_predictions):,} predictions")
-        else:
-            result_predictions = predictions
+        # Note: For large datasets, predictions are returned to frontend but NOT stored in PostgreSQL
+        # This avoids the PostgreSQL JSONB 256MB limit while still processing the complete dataset
+        print(f"[{analysisId}] ℹ️  Complete dataset analysis: {num_rows:,} predictions generated")
+        print(f"[{analysisId}] ℹ️  Predictions will be returned to frontend but not stored in DB")
 
         result = {
             "analysisId": analysisId,
             "model": f"{model_name} (Crypto Mining Detection)",
             "num_rows": num_rows,
-            "predictions": result_predictions,
-            "predictions_info": {
-                "total_analyzed": num_rows,
-                "included_in_result": len(result_predictions),
-                "sampling_applied": num_rows > 10000,
-                "sampling_strategy": "first_1k + last_1k + all_mining" if num_rows > 10000 else "complete"
-            },
+            "predictions": predictions,  # All predictions - not stored in DB
             "statistics": {
                 "total_packets": num_rows,
                 "mining_detected": num_mining,

@@ -204,16 +204,26 @@ export class AnalysisService {
       );
       const duration = Date.now() - startTime;
 
-      // Update analysis with result
+      console.log(`[${analysisId}] Analysis completed in ${duration}ms`);
+      console.log(`[${analysisId}] Predictions in result: ${result.predictions?.length || 0}`);
+
+      // Store result statistics in analyses table (without predictions)
       await databaseService.updateAnalysisResult(analysisId, 'completed', result, duration);
 
-      console.log(`[${analysisId}] Analysis completed in ${duration}ms`);
+      // Store all predictions in predictions table (batch insert for efficiency)
+      if (result.predictions && result.predictions.length > 0) {
+        console.log(`[${analysisId}] Storing ${result.predictions.length} predictions in database...`);
+        await databaseService.insertPredictionsBatch(analysisId, result.predictions);
+      }
+
+      console.log(`[${analysisId}] ✓ Analysis and predictions saved to database`);
 
       // Get updated analysis for real-time notification
       const completedAnalysis = await databaseService.getAnalysisById(analysisId);
 
       if (completedAnalysis) {
-        // Emit status change event
+        // Emit status change event with full result (including ALL predictions)
+        // The full result is sent via Socket.IO for real-time display
         socketService.emitStatusChange(
           analysisId,
           'completed',
@@ -222,18 +232,18 @@ export class AnalysisService {
             analysisId: completedAnalysis.id,
             modelName: completedAnalysis.model_name,
             status: completedAnalysis.status,
-            result: completedAnalysis.result,
+            result: result, // Send FULL result with predictions via Socket.IO
             duration_ms: completedAnalysis.duration_ms,
             created_at: completedAnalysis.created_at,
             completed_at: completedAnalysis.completed_at
           }
         );
 
-        // Emit analysis completed event
+        // Emit analysis completed event with full result
         socketService.emitAnalysisCompleted(analysisId, {
           analysisId: completedAnalysis.id,
           modelName: completedAnalysis.model_name,
-          result: completedAnalysis.result,
+          result: result, // Send FULL result with predictions via Socket.IO
           duration_ms: completedAnalysis.duration_ms,
           created_at: completedAnalysis.created_at,
           completed_at: completedAnalysis.completed_at
@@ -281,6 +291,7 @@ export class AnalysisService {
 
   /**
    * Get analysis result by ID
+   * Loads predictions from predictions table with pagination support
    */
   async getAnalysisResult(analysisId: string): Promise<AnalysisResultResponse> {
     const analysis = await databaseService.getAnalysisById(analysisId);
@@ -289,12 +300,27 @@ export class AnalysisService {
       throw new Error('Analysis not found');
     }
 
+    // For completed analyses, load predictions from predictions table
+    let predictions = [];
+    if (analysis.status === 'completed' && analysis.result) {
+      // Load first 10,000 predictions by default (can be paginated from frontend)
+      predictions = await databaseService.getPredictions(analysisId, 10000, 0);
+      
+      console.log(`[${analysisId}] Loaded ${predictions.length} predictions from database`);
+    }
+
+    // Merge predictions into result object
+    const resultWithPredictions = analysis.result ? {
+      ...analysis.result,
+      predictions: predictions
+    } : null;
+
     return {
       analysisId: analysis.id,
       modelName: analysis.model_name,
       status: analysis.status,
       inputData: analysis.input_data,
-      result: analysis.result,
+      result: resultWithPredictions,
       durationMs: analysis.duration_ms,
       error: analysis.error,
       fileMetadata: analysis.file_metadata,
@@ -340,6 +366,25 @@ export class AnalysisService {
       createdAt: analysis.created_at,
       completedAt: analysis.completed_at,
     }));
+  }
+
+  /**
+   * Get predictions for an analysis with pagination
+   */
+  async getPredictions(
+    analysisId: string,
+    limit: number = 1000,
+    offset: number = 0,
+    miningOnly: boolean = false
+  ): Promise<any[]> {
+    // Verify analysis exists
+    const analysis = await databaseService.getAnalysisById(analysisId);
+    if (!analysis) {
+      throw new Error('Analysis not found');
+    }
+
+    // Get predictions from predictions table
+    return await databaseService.getPredictions(analysisId, limit, offset, miningOnly);
   }
 }
 

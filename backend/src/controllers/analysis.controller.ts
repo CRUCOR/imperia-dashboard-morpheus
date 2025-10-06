@@ -129,6 +129,48 @@ export class AnalysisController {
       });
     }
   }
+
+  /**
+   * GET /predictions/:analysisId
+   * Get predictions for an analysis with pagination
+   */
+  async getPredictions(req: Request, res: Response): Promise<void> {
+    try {
+      const { analysisId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 1000;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const miningOnly = req.query.miningOnly === 'true';
+
+      const predictions = await analysisService.getPredictions(
+        analysisId,
+        limit,
+        offset,
+        miningOnly
+      );
+
+      res.status(200).json({
+        analysisId,
+        predictions,
+        pagination: {
+          limit,
+          offset,
+          count: predictions.length,
+        },
+      });
+    } catch (error) {
+      console.error('Error in getPredictions:', error);
+      
+      if (error instanceof Error && error.message === 'Analysis not found') {
+        res.status(404).json({ error: error.message });
+        return;
+      }
+
+      res.status(500).json({
+        error: 'Internal server error',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
 }
 
 export default new AnalysisController();

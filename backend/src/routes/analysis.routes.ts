@@ -412,4 +412,46 @@ router.get('/results/:analysisId', analysisController.getAnalysisResult);
  */
 router.get('/metrics/:analysisId', analysisController.getAnalysisMetrics);
 
+/**
+ * @swagger
+ * /predictions/{analysisId}:
+ *   get:
+ *     summary: Get predictions for an analysis with pagination
+ *     description: Retrieve predictions from the predictions table with optional pagination and filtering
+ *     tags: [Analysis]
+ *     parameters:
+ *       - in: path
+ *         name: analysisId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Analysis ID
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 1000
+ *         description: Maximum number of predictions to return
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
+ *         description: Number of predictions to skip
+ *       - in: query
+ *         name: miningOnly
+ *         schema:
+ *           type: boolean
+ *           default: false
+ *         description: Return only predictions where mining was detected
+ *     responses:
+ *       200:
+ *         description: Predictions retrieved successfully
+ *       404:
+ *         description: Analysis not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/predictions/:analysisId', analysisController.getPredictions);
+
 export default router;
