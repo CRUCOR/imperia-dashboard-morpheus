@@ -144,45 +144,73 @@ export default function AnalysisDetail() {
 
   const renderSensitiveInfoResults = (findings: any[]) => {
     const getSeverityColor = (severity: string) => {
-      const colors: Record<string, { bg: string; text: string }> = {
-        critical: { bg: '#fee2e2', text: '#991b1b' },
-        high: { bg: '#fed7aa', text: '#9a3412' },
-        medium: { bg: '#fef3c7', text: '#92400e' },
-        low: { bg: '#dbeafe', text: '#1e40af' }
+      const colors: Record<string, string> = {
+        critical: '#fee2e2',
+        high: '#fed7aa',
+        medium: '#fef3c7',
+        low: '#dbeafe'
       };
-      return colors[severity] || { bg: '#f1f5f9', text: '#475569' };
+      return colors[severity] || '#f1f5f9';
+    };
+
+    const getSeverityTextColor = (severity: string) => {
+      const colors: Record<string, string> = {
+        critical: '#991b1b',
+        high: '#9a3412',
+        medium: '#92400e',
+        low: '#1e40af'
+      };
+      return colors[severity] || '#475569';
     };
 
     return (
-      <div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {findings.slice(0, 100).map((finding, idx) => {
-            const colors = getSeverityColor(finding.severity);
-            return (
-              <div key={idx} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '0.5rem', backgroundColor: '#fafafa' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                  <span style={{ fontWeight: '600', color: '#1e293b' }}>Fila #{finding.row_id}</span>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
-                      {finding.type.toUpperCase()}
-                    </span>
-                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: colors.bg, color: colors.text, borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
-                      {finding.severity.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-                <div style={{ fontSize: '0.875rem', fontFamily: 'monospace', padding: '0.5rem', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '0.25rem', marginBottom: '0.5rem' }}>
+      <div style={{ overflowX: 'auto', maxHeight: '600px', overflowY: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+          <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8fafc', zIndex: 1 }}>
+            <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Row ID</th>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Tipo</th>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Contenido</th>
+              <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#475569' }}>Severidad</th>
+              <th style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#475569' }}>Confianza</th>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Campo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {findings.slice(0, 200).map((finding, idx) => (
+              <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: finding.severity === 'critical' || finding.severity === 'high' ? '#fef2f2' : 'transparent' }}>
+                <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>{finding.row_id}</td>
+                <td style={{ padding: '0.75rem' }}>
+                  <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
+                    {finding.type.toUpperCase()}
+                  </span>
+                </td>
+                <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem', maxWidth: '400px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {finding.content}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                  Confianza: {(finding.confidence * 100).toFixed(1)}%
-                  {finding.location?.field && ` | Campo: ${finding.location.field}`}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {findings.length > 100 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 100 de {findings.length} hallazgos</p>}
+                </td>
+                <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                  <span style={{ 
+                    padding: '0.25rem 0.5rem', 
+                    backgroundColor: getSeverityColor(finding.severity), 
+                    color: getSeverityTextColor(finding.severity), 
+                    borderRadius: '0.25rem', 
+                    fontSize: '0.75rem', 
+                    fontWeight: '600' 
+                  }}>
+                    {finding.severity.toUpperCase()}
+                  </span>
+                </td>
+                <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#1e293b' }}>
+                  {(finding.confidence * 100).toFixed(1)}%
+                </td>
+                <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>
+                  {finding.location?.field || 'N/A'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {findings.length > 200 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 200 de {findings.length} hallazgos</p>}
       </div>
     );
   };
@@ -244,17 +272,27 @@ export default function AnalysisDetail() {
 
   const renderPhishingResults = (detections: any[]) => {
     return (
-      <div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {detections.slice(0, 100).map((det, idx) => {
-            const isPhishing = det.is_phishing || det.phishing_probability > 0.5;
-            const bgColor = isPhishing ? '#fef2f2' : '#f8fafc';
-            const borderColor = isPhishing ? '#fee2e2' : '#e2e8f0';
-            return (
-              <div key={idx} style={{ padding: '1rem', border: `1px solid ${borderColor}`, borderRadius: '0.5rem', backgroundColor: bgColor }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                  <span style={{ fontWeight: '600', color: '#1e293b' }}>Fila #{det.row_id}</span>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div style={{ overflowX: 'auto', maxHeight: '600px', overflowY: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+          <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8fafc', zIndex: 1 }}>
+            <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Row ID</th>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Fuente</th>
+              <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#475569' }}>Clasificación</th>
+              <th style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#475569' }}>Probabilidad</th>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Indicadores</th>
+            </tr>
+          </thead>
+          <tbody>
+            {detections.slice(0, 200).map((det, idx) => {
+              const isPhishing = det.is_phishing || det.phishing_probability > 0.5;
+              return (
+                <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: isPhishing ? '#fef2f2' : 'transparent' }}>
+                  <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>{det.row_id}</td>
+                  <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {det.source?.url || det.source?.email || det.source?.subject || 'N/A'}
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                     <span style={{ 
                       padding: '0.25rem 0.5rem', 
                       backgroundColor: isPhishing ? '#fee2e2' : '#f0fdf4', 
@@ -265,58 +303,67 @@ export default function AnalysisDetail() {
                     }}>
                       {isPhishing ? 'PHISHING' : 'LEGÍTIMO'}
                     </span>
-                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
-                      {(det.phishing_probability * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
-                {det.source && (
-                  <div style={{ fontSize: '0.875rem', fontFamily: 'monospace', padding: '0.5rem', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '0.25rem', marginBottom: '0.75rem', wordBreak: 'break-all' }}>
-                    {det.source.url || det.source.email || det.source.subject || 'N/A'}
-                  </div>
-                )}
-                {det.indicators && det.indicators.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {det.indicators.slice(0, 3).map((ind: any, i: number) => (
-                      <div key={i} style={{ fontSize: '0.75rem', padding: '0.5rem', backgroundColor: 'white', borderLeft: '3px solid #f59e0b', paddingLeft: '0.75rem' }}>
-                        <span style={{ fontWeight: '600', color: '#92400e' }}>[{ind.type}]</span> {ind.description}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {detections.length > 100 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 100 de {detections.length} registros</p>}
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#1e293b' }}>
+                    {(det.phishing_probability * 100).toFixed(1)}%
+                  </td>
+                  <td style={{ padding: '0.75rem', fontSize: '0.75rem', color: '#64748b' }}>
+                    {det.indicators && det.indicators.length > 0 
+                      ? det.indicators.slice(0, 2).map((ind: any) => ind.type).join(', ')
+                      : 'N/A'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {detections.length > 200 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 200 de {detections.length} registros</p>}
       </div>
     );
   };
 
   const renderFraudResults = (transactions: any[]) => {
-    const getRiskColor = (level: string) => {
-      const colors: Record<string, { bg: string; text: string }> = {
-        critical: { bg: '#fee2e2', text: '#991b1b' },
-        high: { bg: '#fed7aa', text: '#9a3412' },
-        medium: { bg: '#fef3c7', text: '#92400e' },
-        low: { bg: '#dbeafe', text: '#1e40af' }
+    const getRiskBgColor = (level: string) => {
+      const colors: Record<string, string> = {
+        critical: '#fee2e2',
+        high: '#fed7aa',
+        medium: '#fef3c7',
+        low: '#dbeafe'
       };
-      return colors[level] || { bg: '#f1f5f9', text: '#475569' };
+      return colors[level] || '#f1f5f9';
+    };
+
+    const getRiskTextColor = (level: string) => {
+      const colors: Record<string, string> = {
+        critical: '#991b1b',
+        high: '#9a3412',
+        medium: '#92400e',
+        low: '#1e40af'
+      };
+      return colors[level] || '#475569';
     };
 
     return (
-      <div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {transactions.slice(0, 100).map((tx, idx) => {
-            const colors = getRiskColor(tx.risk_level);
-            const isFraud = tx.is_fraudulent || tx.fraud_probability > 0.5;
-            const bgColor = isFraud ? '#fef2f2' : '#f8fafc';
-            const borderColor = isFraud ? '#fee2e2' : '#e2e8f0';
-            return (
-              <div key={idx} style={{ padding: '1rem', border: `1px solid ${borderColor}`, borderRadius: '0.5rem', backgroundColor: bgColor }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                  <span style={{ fontWeight: '600', color: '#1e293b', fontSize: '0.875rem' }}>TX: {tx.transaction_id}</span>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div style={{ overflowX: 'auto', maxHeight: '600px', overflowY: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+          <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8fafc', zIndex: 1 }}>
+            <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>TX ID</th>
+              <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#475569' }}>Clasificación</th>
+              <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#475569' }}>Riesgo</th>
+              <th style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#475569' }}>Probabilidad</th>
+              <th style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#475569' }}>Monto</th>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Usuario</th>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Anomalías</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transactions.slice(0, 200).map((tx, idx) => {
+              const isFraud = tx.is_fraudulent || tx.fraud_probability > 0.5;
+              return (
+                <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: isFraud ? '#fef2f2' : 'transparent' }}>
+                  <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>{tx.transaction_id}</td>
+                  <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                     <span style={{ 
                       padding: '0.25rem 0.5rem', 
                       backgroundColor: isFraud ? '#fee2e2' : '#f0fdf4', 
@@ -325,62 +372,90 @@ export default function AnalysisDetail() {
                       fontSize: '0.75rem', 
                       fontWeight: '600' 
                     }}>
-                      {isFraud ? 'FRAUDULENTA' : 'LEGÍTIMA'}
+                      {isFraud ? 'FRAUDE' : 'LEGÍTIMA'}
                     </span>
-                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: colors.bg, color: colors.text, borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                    <span style={{ 
+                      padding: '0.25rem 0.5rem', 
+                      backgroundColor: getRiskBgColor(tx.risk_level), 
+                      color: getRiskTextColor(tx.risk_level), 
+                      borderRadius: '0.25rem', 
+                      fontSize: '0.75rem', 
+                      fontWeight: '600' 
+                    }}>
                       {tx.risk_level.toUpperCase()}
                     </span>
-                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
-                      {(tx.fraud_probability * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
-                {tx.transaction_data && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
-                    {tx.transaction_data.amount && <div><span style={{ color: '#64748b' }}>Monto: </span><span style={{ fontWeight: '600' }}>${tx.transaction_data.amount.toLocaleString()}</span></div>}
-                    {tx.transaction_data.user_id && <div><span style={{ color: '#64748b' }}>Usuario: </span><span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{tx.transaction_data.user_id}</span></div>}
-                  </div>
-                )}
-                {tx.anomalies && tx.anomalies.length > 0 && (
-                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                    {tx.anomalies.slice(0, 3).map((a: any, i: number) => (
-                      <div key={i}>• {a.description}</div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {transactions.length > 100 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 100 de {transactions.length} transacciones</p>}
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#1e293b' }}>
+                    {(tx.fraud_probability * 100).toFixed(1)}%
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#1e293b' }}>
+                    ${tx.transaction_data?.amount?.toLocaleString() || 'N/A'}
+                  </td>
+                  <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>
+                    {tx.transaction_data?.user_id || 'N/A'}
+                  </td>
+                  <td style={{ padding: '0.75rem', fontSize: '0.75rem', color: '#64748b' }}>
+                    {tx.anomalies && tx.anomalies.length > 0 
+                      ? `${tx.anomalies.length} detectadas`
+                      : 'Ninguna'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {transactions.length > 200 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 200 de {transactions.length} transacciones</p>}
       </div>
     );
   };
 
   const renderRansomwareResults = (threats: any[]) => {
-    const getThreatColor = (level: string) => {
-      const colors: Record<string, { bg: string; text: string }> = {
-        critical: { bg: '#fee2e2', text: '#991b1b' },
-        high: { bg: '#fed7aa', text: '#9a3412' },
-        medium: { bg: '#fef3c7', text: '#92400e' },
-        low: { bg: '#dbeafe', text: '#1e40af' }
+    const getThreatBgColor = (level: string) => {
+      const colors: Record<string, string> = {
+        critical: '#fee2e2',
+        high: '#fed7aa',
+        medium: '#fef3c7',
+        low: '#dbeafe'
       };
-      return colors[level] || { bg: '#f1f5f9', text: '#475569' };
+      return colors[level] || '#f1f5f9';
+    };
+
+    const getThreatTextColor = (level: string) => {
+      const colors: Record<string, string> = {
+        critical: '#991b1b',
+        high: '#9a3412',
+        medium: '#92400e',
+        low: '#1e40af'
+      };
+      return colors[level] || '#475569';
     };
 
     return (
-      <div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {threats.slice(0, 100).map((threat, idx) => {
-            const colors = getThreatColor(threat.threat_level);
-            const isRansomware = threat.is_ransomware || threat.ransomware_probability > 0.5;
-            const bgColor = isRansomware ? '#fef2f2' : '#f8fafc';
-            const borderColor = isRansomware ? '#fee2e2' : '#e2e8f0';
-            return (
-              <div key={idx} style={{ padding: '1rem', border: `1px solid ${borderColor}`, borderRadius: '0.5rem', backgroundColor: bgColor }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                  <span style={{ fontWeight: '600', color: '#1e293b' }}>Fila #{threat.row_id}</span>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+      <div style={{ overflowX: 'auto', maxHeight: '600px', overflowY: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+          <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8fafc', zIndex: 1 }}>
+            <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Row ID</th>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Archivo</th>
+              <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#475569' }}>Clasificación</th>
+              <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#475569' }}>Amenaza</th>
+              <th style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#475569' }}>Probabilidad</th>
+              <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#475569' }}>Cifrado</th>
+              <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Indicadores</th>
+            </tr>
+          </thead>
+          <tbody>
+            {threats.slice(0, 200).map((threat, idx) => {
+              const isRansomware = threat.is_ransomware || threat.ransomware_probability > 0.5;
+              return (
+                <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: isRansomware ? '#fef2f2' : 'transparent' }}>
+                  <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>{threat.row_id}</td>
+                  <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {threat.file_info?.path || threat.file_info?.name || 'N/A'}
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'center' }}>
                     <span style={{ 
                       padding: '0.25rem 0.5rem', 
                       backgroundColor: isRansomware ? '#fee2e2' : '#f0fdf4', 
@@ -391,38 +466,42 @@ export default function AnalysisDetail() {
                     }}>
                       {isRansomware ? 'RANSOMWARE' : 'LIMPIO'}
                     </span>
-                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: colors.bg, color: colors.text, borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                    <span style={{ 
+                      padding: '0.25rem 0.5rem', 
+                      backgroundColor: getThreatBgColor(threat.threat_level), 
+                      color: getThreatTextColor(threat.threat_level), 
+                      borderRadius: '0.25rem', 
+                      fontSize: '0.75rem', 
+                      fontWeight: '600' 
+                    }}>
                       {threat.threat_level.toUpperCase()}
                     </span>
-                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
-                      {(threat.ransomware_probability * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
-                {threat.file_info && (
-                  <div style={{ fontSize: '0.875rem', fontFamily: 'monospace', padding: '0.5rem', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '0.25rem', marginBottom: '0.75rem' }}>
-                    {threat.file_info.path || threat.file_info.name}
-                    {threat.file_info.is_encrypted && (
-                      <span style={{ marginLeft: '0.5rem', padding: '0.125rem 0.375rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
-                        ENCRYPTED
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#1e293b' }}>
+                    {(threat.ransomware_probability * 100).toFixed(1)}%
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                    {threat.file_info?.is_encrypted ? (
+                      <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
+                        SÍ
                       </span>
+                    ) : (
+                      <span style={{ color: '#64748b', fontSize: '0.75rem' }}>NO</span>
                     )}
-                  </div>
-                )}
-                {threat.indicators && threat.indicators.length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {threat.indicators.filter((i: any) => i.matched).slice(0, 4).map((ind: any, i: number) => (
-                      <span key={i} style={{ padding: '0.25rem 0.5rem', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
-                        {ind.type}: {ind.description}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        {threats.length > 100 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 100 de {threats.length} amenazas</p>}
+                  </td>
+                  <td style={{ padding: '0.75rem', fontSize: '0.75rem', color: '#64748b' }}>
+                    {threat.indicators && threat.indicators.length > 0 
+                      ? `${threat.indicators.filter((i: any) => i.matched).length} detectados`
+                      : 'Ninguno'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {threats.length > 200 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 200 de {threats.length} amenazas</p>}
       </div>
     );
   };
@@ -654,23 +733,23 @@ export default function AnalysisDetail() {
           {activeTab === 'params' && (
             <div>
               <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
-                Parámetros de Entrada
+                Parámetros del Modelo
               </h3>
-              {analysis.inputData ? (
+              {analysis.modelParameters && Object.keys(analysis.modelParameters).length > 0 ? (
                 <div style={{ display: 'grid', gap: '0.75rem' }}>
-                  {Object.entries(analysis.inputData).map(([key, value]) => (
-                    <div key={key} style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '1rem', padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '0.375rem', border: '1px solid #e2e8f0' }}>
+                  {Object.entries(analysis.modelParameters).map(([key, value]) => (
+                    <div key={key} style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '1rem', padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '0.375rem', border: '1px solid #e2e8f0' }}>
                       <span style={{ fontWeight: '600', color: '#475569', textTransform: 'capitalize' }}>
                         {key.replace(/_/g, ' ')}:
                       </span>
-                      <span style={{ color: '#1e293b', fontFamily: key.includes('id') ? 'monospace' : 'inherit', fontSize: '0.875rem' }}>
-                        {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                      <span style={{ color: '#1e293b', fontSize: '0.875rem' }}>
+                        {typeof value === 'boolean' ? (value ? 'Sí' : 'No') : typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p style={{ color: '#64748b' }}>No hay parámetros disponibles</p>
+                <p style={{ color: '#64748b' }}>No hay parámetros del modelo disponibles</p>
               )}
             </div>
           )}
