@@ -58,7 +58,7 @@ export default function AnalysisDetail() {
     if (!stats) return null;
 
     return (
-      <Card title="📊 Estadísticas del Análisis">
+      <Card title="Estadísticas del Análisis">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
           {Object.entries(stats).map(([key, value]) => {
             if (typeof value === 'object' || Array.isArray(value)) return null;
@@ -108,7 +108,6 @@ export default function AnalysisDetail() {
 
   const renderFingerprintResults = (fingerprints: any[]) => (
     <div style={{ overflowX: 'auto' }}>
-      <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🔐 Huellas Digitales ({fingerprints.length})</h3>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
         <thead>
           <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
@@ -156,7 +155,6 @@ export default function AnalysisDetail() {
 
     return (
       <div>
-        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🔍 Información Confidencial ({findings.length} registros)</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {findings.slice(0, 100).map((finding, idx) => {
             const colors = getSeverityColor(finding.severity);
@@ -192,7 +190,6 @@ export default function AnalysisDetail() {
   const renderCryptominingResults = (predictions: any[]) => {
     return (
       <div>
-        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>⛏️ Análisis de Criptominería ({predictions.length} paquetes)</h3>
         <div style={{ overflowX: 'auto', maxHeight: '600px', overflowY: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8fafc', zIndex: 1 }}>
@@ -248,7 +245,6 @@ export default function AnalysisDetail() {
   const renderPhishingResults = (detections: any[]) => {
     return (
       <div>
-        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🎣 Análisis de Phishing ({detections.length} registros)</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {detections.slice(0, 100).map((det, idx) => {
             const isPhishing = det.is_phishing || det.phishing_probability > 0.5;
@@ -310,7 +306,6 @@ export default function AnalysisDetail() {
 
     return (
       <div>
-        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>💰 Análisis de Transacciones ({transactions.length} registros)</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {transactions.slice(0, 100).map((tx, idx) => {
             const colors = getRiskColor(tx.risk_level);
@@ -375,7 +370,6 @@ export default function AnalysisDetail() {
 
     return (
       <div>
-        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🦠 Análisis de Ransomware ({threats.length} registros)</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {threats.slice(0, 100).map((threat, idx) => {
             const colors = getThreatColor(threat.threat_level);
