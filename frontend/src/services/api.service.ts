@@ -53,18 +53,16 @@ class ApiService {
     return response.data;
   }
 
-  async uploadFile(file: File, params: {
-    model_name: string;
-    pipeline_batch_size: string;
-    model_max_batch_size: string;
-    num_threads: string;
-  }): Promise<UploadResponse> {
+  async uploadFile(file: File, params: Record<string, any>): Promise<UploadResponse> {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('model_name', params.model_name);
-    formData.append('pipeline_batch_size', params.pipeline_batch_size);
-    formData.append('model_max_batch_size', params.model_max_batch_size);
-    formData.append('num_threads', params.num_threads);
+    
+    // Append all parameters dynamically
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        formData.append(key, String(value));
+      }
+    });
 
     const response = await this.api.post('/analyze', formData, {
       headers: {

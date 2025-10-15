@@ -264,7 +264,7 @@ export class AnalysisService {
 
   /**
    * Get analysis result by ID
-   * Loads predictions from predictions table with pagination support
+   * Loads predictions from predictions table only for cryptomining model
    */
   async getAnalysisResult(analysisId: string): Promise<AnalysisResultResponse> {
     const analysis = await databaseService.getAnalysisById(analysisId);
@@ -273,20 +273,21 @@ export class AnalysisService {
       throw new Error('Analysis not found');
     }
 
-    // For completed analyses, load predictions from predictions table
-    let predictions = [];
-    if (analysis.status === 'completed' && analysis.result) {
+    // For cryptomining model with predictions stored separately, load from predictions table
+    let resultWithPredictions = analysis.result;
+    
+    if (analysis.status === 'completed' && analysis.result && (analysis.result as any).predictions_stored_separately) {
       // Load first 10,000 predictions by default (can be paginated from frontend)
-      predictions = await databaseService.getPredictions(analysisId, 10000, 0);
+      const predictions = await databaseService.getPredictions(analysisId, 10000, 0);
       
       console.log(`[${analysisId}] Loaded ${predictions.length} predictions from database`);
+      
+      // Merge predictions into result object
+      resultWithPredictions = {
+        ...analysis.result,
+        predictions: predictions
+      };
     }
-
-    // Merge predictions into result object
-    const resultWithPredictions = analysis.result ? {
-      ...analysis.result,
-      predictions: predictions
-    } : undefined;
 
     return {
       analysisId: analysis.id,

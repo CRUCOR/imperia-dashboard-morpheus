@@ -43,8 +43,8 @@ export class DatabaseService {
 
   /**
    * Update analysis with result
-   * Stores statistics and metadata in analyses table
-   * Predictions are stored separately in predictions table to avoid JSONB 256MB limit
+   * For cryptomining model: stores predictions separately in predictions table
+   * For other models: stores full result in analyses.result JSONB field
    */
   async updateAnalysisResult(
     id: string,
@@ -52,22 +52,38 @@ export class DatabaseService {
     result: any,
     duration: number
   ): Promise<void> {
-    // Store only statistics and metadata in analyses table
-    const resultForDb = {
-      analysisId: result.analysisId,
-      model: result.model,
-      num_rows: result.num_rows,
-      statistics: result.statistics,
-      metadata: result.metadata,
-      predictions_stored_separately: true
-    };
+    // Check if this is cryptomining model (has predictions array)
+    const isCryptomining = result.predictions && Array.isArray(result.predictions);
 
-    await pool.query(
-      `UPDATE analyses
-       SET status = $1, result = $2, duration_ms = $3, completed_at = NOW()
-       WHERE id = $4`,
-      [status, JSON.stringify(resultForDb), duration, id]
-    );
+    if (isCryptomining && result.predictions.length > 0) {
+      // For cryptomining: store only statistics and metadata in analyses table
+      const resultForDb = {
+        analysisId: result.analysisId,
+        model: result.model,
+        num_rows: result.num_rows,
+        statistics: result.statistics,
+        metadata: result.metadata,
+        predictions_stored_separately: true
+      };
+
+      await pool.query(
+        `UPDATE analyses
+         SET status = $1, result = $2, duration_ms = $3, completed_at = NOW()
+         WHERE id = $4`,
+        [status, JSON.stringify(resultForDb), duration, id]
+      );
+
+      // Store predictions in separate table
+      await this.insertPredictionsBatch(id, result.predictions);
+    } else {
+      // For all other models: store complete result directly
+      await pool.query(
+        `UPDATE analyses
+         SET status = $1, result = $2, duration_ms = $3, completed_at = NOW()
+         WHERE id = $4`,
+        [status, JSON.stringify(result), duration, id]
+      );
+    }
   }
 
   /**

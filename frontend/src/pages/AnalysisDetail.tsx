@@ -95,6 +95,324 @@ export default function AnalysisDetail() {
     );
   }
 
+  // Render model-specific statistics
+  const renderStatistics = () => {
+    if (!analysis.result) return null;
+    const stats = analysis.result.statistics as any;
+    if (!stats) return null;
+
+    return (
+      <Card title="📊 Estadísticas del Análisis">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+          {Object.entries(stats).map(([key, value]) => {
+            if (typeof value === 'object' || Array.isArray(value)) return null;
+            return (
+              <div key={key}>
+                <div style={{ fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                  {key.replace(/_/g, ' ')}
+                </div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>
+                  {typeof value === 'number' ? value.toLocaleString() : String(value)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    );
+  };
+
+  // Render results based on model type
+  const renderResults = () => {
+    if (!analysis.result) return <p style={{ color: '#64748b' }}>No hay resultados disponibles</p>;
+    const result = analysis.result as any;
+
+    // Detect which type of results we have
+    if (result.fingerprints && result.fingerprints.length > 0) {
+      return renderFingerprintResults(result.fingerprints);
+    }
+    if (result.findings && result.findings.length > 0) {
+      return renderSensitiveInfoResults(result.findings);
+    }
+    if (result.predictions && result.predictions.length > 0) {
+      return renderCryptominingResults(result.predictions);
+    }
+    if (result.detections && result.detections.length > 0) {
+      return renderPhishingResults(result.detections);
+    }
+    if (result.transactions && result.transactions.length > 0) {
+      return renderFraudResults(result.transactions);
+    }
+    if (result.threats && result.threats.length > 0) {
+      return renderRansomwareResults(result.threats);
+    }
+
+    return <p style={{ color: '#64748b' }}>No hay resultados detallados disponibles</p>;
+  };
+
+  const renderFingerprintResults = (fingerprints: any[]) => (
+    <div style={{ overflowX: 'auto' }}>
+      <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🔐 Huellas Digitales ({fingerprints.length})</h3>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+        <thead>
+          <tr style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+            <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Archivo/Ruta</th>
+            <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Algoritmo</th>
+            <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Hash</th>
+            <th style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#475569' }}>Tamaño</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fingerprints.slice(0, 100).map((fp, idx) => (
+            <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+              <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem' }}>{fp.file_path || `Row ${idx}`}</td>
+              <td style={{ padding: '0.75rem' }}>
+                <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
+                  {fp.algorithm}
+                </span>
+              </td>
+              <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.7rem', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {fp.hash}
+              </td>
+              <td style={{ padding: '0.75rem', textAlign: 'right', color: '#64748b' }}>{(fp.size_bytes / 1024).toFixed(2)} KB</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {fingerprints.length > 100 && (
+        <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>
+          Mostrando 100 de {fingerprints.length} huellas
+        </p>
+      )}
+    </div>
+  );
+
+  const renderSensitiveInfoResults = (findings: any[]) => {
+    const getSeverityColor = (severity: string) => {
+      const colors: Record<string, { bg: string; text: string }> = {
+        critical: { bg: '#fee2e2', text: '#991b1b' },
+        high: { bg: '#fed7aa', text: '#9a3412' },
+        medium: { bg: '#fef3c7', text: '#92400e' },
+        low: { bg: '#dbeafe', text: '#1e40af' }
+      };
+      return colors[severity] || { bg: '#f1f5f9', text: '#475569' };
+    };
+
+    return (
+      <div>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🔍 Información Confidencial Detectada ({findings.length})</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {findings.slice(0, 50).map((finding, idx) => {
+            const colors = getSeverityColor(finding.severity);
+            return (
+              <div key={idx} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '0.5rem', backgroundColor: '#fafafa' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <span style={{ fontWeight: '600', color: '#1e293b' }}>Fila #{finding.row_id}</span>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
+                      {finding.type.toUpperCase()}
+                    </span>
+                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: colors.bg, color: colors.text, borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
+                      {finding.severity.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ fontSize: '0.875rem', fontFamily: 'monospace', padding: '0.5rem', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '0.25rem', marginBottom: '0.5rem' }}>
+                  {finding.content}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  Confianza: {(finding.confidence * 100).toFixed(1)}%
+                  {finding.location?.field && ` | Campo: ${finding.location.field}`}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        {findings.length > 50 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 50 de {findings.length} hallazgos</p>}
+      </div>
+    );
+  };
+
+  const renderCryptominingResults = (predictions: any[]) => {
+    const miningPredictions = predictions.filter((p: any) => p.prediction?.is_mining);
+    return (
+      <div>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>⛏️ Detecciones de Criptominería ({miningPredictions.length}/{predictions.length})</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {miningPredictions.slice(0, 50).map((pred, idx) => (
+            <div key={idx} style={{ padding: '1rem', border: '1px solid #fee2e2', borderRadius: '0.5rem', backgroundColor: '#fef2f2' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                <span style={{ fontWeight: '600', color: '#1e293b' }}>Paquete #{pred.row_id}</span>
+                <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
+                  MINING
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+                <div><span style={{ color: '#64748b' }}>Probabilidad: </span><span style={{ fontWeight: '600' }}>{(pred.prediction.mining_probability * 100).toFixed(2)}%</span></div>
+                <div><span style={{ color: '#64748b' }}>Confianza: </span><span style={{ fontWeight: '600' }}>{(pred.prediction.confidence * 100).toFixed(2)}%</span></div>
+                <div><span style={{ color: '#64748b' }}>Anomalía: </span><span style={{ fontWeight: '600' }}>{pred.prediction.anomaly_score?.toFixed(2)}</span></div>
+              </div>
+              {pred.packet_info && (
+                <div style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#475569', padding: '0.5rem', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }}>
+                  {pred.packet_info.src_ip}:{pred.packet_info.src_port} → {pred.packet_info.dest_ip}:{pred.packet_info.dest_port}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        {miningPredictions.length > 50 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 50 de {miningPredictions.length}</p>}
+      </div>
+    );
+  };
+
+  const renderPhishingResults = (detections: any[]) => {
+    const phishingDetections = detections.filter((d: any) => d.is_phishing);
+    return (
+      <div>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🎣 Detecciones de Phishing ({phishingDetections.length}/{detections.length})</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {phishingDetections.slice(0, 50).map((det, idx) => (
+            <div key={idx} style={{ padding: '1rem', border: '1px solid #fee2e2', borderRadius: '0.5rem', backgroundColor: '#fef2f2' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                <span style={{ fontWeight: '600', color: '#1e293b' }}>Fila #{det.row_id}</span>
+                <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
+                  {(det.phishing_probability * 100).toFixed(1)}% PHISHING
+                </span>
+              </div>
+              {det.source && (
+                <div style={{ fontSize: '0.875rem', fontFamily: 'monospace', padding: '0.5rem', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '0.25rem', marginBottom: '0.75rem', wordBreak: 'break-all' }}>
+                  {det.source.url || det.source.email || det.source.subject || 'N/A'}
+                </div>
+              )}
+              {det.indicators && det.indicators.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {det.indicators.slice(0, 3).map((ind: any, i: number) => (
+                    <div key={i} style={{ fontSize: '0.75rem', padding: '0.5rem', backgroundColor: 'white', borderLeft: '3px solid #f59e0b', paddingLeft: '0.75rem' }}>
+                      <span style={{ fontWeight: '600', color: '#92400e' }}>[{ind.type}]</span> {ind.description}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        {phishingDetections.length > 50 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 50 de {phishingDetections.length}</p>}
+      </div>
+    );
+  };
+
+  const renderFraudResults = (transactions: any[]) => {
+    const fraudulent = transactions.filter((t: any) => t.is_fraudulent);
+    const getRiskColor = (level: string) => {
+      const colors: Record<string, { bg: string; text: string }> = {
+        critical: { bg: '#fee2e2', text: '#991b1b' },
+        high: { bg: '#fed7aa', text: '#9a3412' },
+        medium: { bg: '#fef3c7', text: '#92400e' },
+        low: { bg: '#dbeafe', text: '#1e40af' }
+      };
+      return colors[level] || { bg: '#f1f5f9', text: '#475569' };
+    };
+
+    return (
+      <div>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>💰 Transacciones Fraudulentas ({fraudulent.length}/{transactions.length})</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {fraudulent.slice(0, 50).map((tx, idx) => {
+            const colors = getRiskColor(tx.risk_level);
+            return (
+              <div key={idx} style={{ padding: '1rem', border: '1px solid #fee2e2', borderRadius: '0.5rem', backgroundColor: '#fef2f2' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <span style={{ fontWeight: '600', color: '#1e293b', fontSize: '0.875rem' }}>TX: {tx.transaction_id}</span>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: colors.bg, color: colors.text, borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
+                      {tx.risk_level.toUpperCase()}
+                    </span>
+                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
+                      {(tx.fraud_probability * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+                {tx.transaction_data && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+                    {tx.transaction_data.amount && <div><span style={{ color: '#64748b' }}>Monto: </span><span style={{ fontWeight: '600' }}>${tx.transaction_data.amount.toLocaleString()}</span></div>}
+                    {tx.transaction_data.user_id && <div><span style={{ color: '#64748b' }}>Usuario: </span><span style={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>{tx.transaction_data.user_id}</span></div>}
+                  </div>
+                )}
+                {tx.anomalies && tx.anomalies.length > 0 && (
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                    {tx.anomalies.slice(0, 3).map((a: any, i: number) => (
+                      <div key={i}>• {a.description}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {fraudulent.length > 50 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 50 de {fraudulent.length}</p>}
+      </div>
+    );
+  };
+
+  const renderRansomwareResults = (threats: any[]) => {
+    const ransomware = threats.filter((t: any) => t.is_ransomware);
+    const getThreatColor = (level: string) => {
+      const colors: Record<string, { bg: string; text: string }> = {
+        critical: { bg: '#fee2e2', text: '#991b1b' },
+        high: { bg: '#fed7aa', text: '#9a3412' },
+        medium: { bg: '#fef3c7', text: '#92400e' },
+        low: { bg: '#dbeafe', text: '#1e40af' }
+      };
+      return colors[level] || { bg: '#f1f5f9', text: '#475569' };
+    };
+
+    return (
+      <div>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🦠 Amenazas de Ransomware ({ransomware.length}/{threats.length})</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {ransomware.slice(0, 50).map((threat, idx) => {
+            const colors = getThreatColor(threat.threat_level);
+            return (
+              <div key={idx} style={{ padding: '1rem', border: '1px solid #fee2e2', borderRadius: '0.5rem', backgroundColor: '#fef2f2' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <span style={{ fontWeight: '600', color: '#1e293b' }}>Fila #{threat.row_id}</span>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: colors.bg, color: colors.text, borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
+                      {threat.threat_level.toUpperCase()}
+                    </span>
+                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
+                      {(threat.ransomware_probability * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+                {threat.file_info && (
+                  <div style={{ fontSize: '0.875rem', fontFamily: 'monospace', padding: '0.5rem', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '0.25rem', marginBottom: '0.75rem' }}>
+                    {threat.file_info.path || threat.file_info.name}
+                    {threat.file_info.is_encrypted && (
+                      <span style={{ marginLeft: '0.5rem', padding: '0.125rem 0.375rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
+                        ENCRYPTED
+                      </span>
+                    )}
+                  </div>
+                )}
+                {threat.indicators && threat.indicators.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {threat.indicators.filter((i: any) => i.matched).slice(0, 4).map((ind: any, i: number) => (
+                      <span key={i} style={{ padding: '0.25rem 0.5rem', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
+                        {ind.type}: {ind.description}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {ransomware.length > 50 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 50 de {ransomware.length}</p>}
+      </div>
+    );
+  };
+
   const tabs = [
     { id: 'overview', label: 'Resumen', icon: FileText },
     { id: 'results', label: 'Resultados', icon: Eye },
@@ -161,10 +479,10 @@ export default function AnalysisDetail() {
             </p>
           </div>
           <div>
-            <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0', textTransform: 'uppercase' }}>Tasa de Minería</p>
+            <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0', textTransform: 'uppercase' }}>Tasa de Detección</p>
             <p style={{ color: '#1e293b', fontWeight: '600', margin: 0, fontSize: '0.875rem' }}>
-              {analysis.result?.statistics?.mining_rate !== undefined 
-                ? `${analysis.result.statistics.mining_rate}%` 
+              {analysis.result && (analysis.result.statistics as any)?.mining_rate !== undefined 
+                ? `${(analysis.result.statistics as any).mining_rate}%` 
                 : 'N/A'}
             </p>
           </div>
@@ -208,42 +526,10 @@ export default function AnalysisDetail() {
           {activeTab === 'overview' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               {/* Statistics */}
-              {analysis.result?.statistics && (
-                <div>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
-                    Estadísticas del Análisis
-                  </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    <div style={{ padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
-                      <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.5rem 0' }}>Total de Paquetes</p>
-                      <p style={{ color: '#1e293b', fontSize: '1.5rem', fontWeight: '700', margin: 0 }}>
-                        {analysis.result.statistics.total_packets?.toLocaleString()}
-                      </p>
-                    </div>
-                    <div style={{ padding: '1rem', backgroundColor: '#fef2f2', borderRadius: '0.5rem', border: '1px solid #fecaca' }}>
-                      <p style={{ color: '#991b1b', fontSize: '0.75rem', margin: '0 0 0.5rem 0' }}>Minería Detectada</p>
-                      <p style={{ color: '#dc2626', fontSize: '1.5rem', fontWeight: '700', margin: 0 }}>
-                        {analysis.result.statistics.mining_detected?.toLocaleString()}
-                      </p>
-                    </div>
-                    <div style={{ padding: '1rem', backgroundColor: '#f0fdf4', borderRadius: '0.5rem', border: '1px solid #bbf7d0' }}>
-                      <p style={{ color: '#14532d', fontSize: '0.75rem', margin: '0 0 0.5rem 0' }}>Tráfico Regular</p>
-                      <p style={{ color: '#16a34a', fontSize: '1.5rem', fontWeight: '700', margin: 0 }}>
-                        {(analysis.result.statistics.regular_traffic || analysis.result.statistics.benign_traffic)?.toLocaleString()}
-                      </p>
-                    </div>
-                    <div style={{ padding: '1rem', backgroundColor: '#fff7ed', borderRadius: '0.5rem', border: '1px solid #fed7aa' }}>
-                      <p style={{ color: '#7c2d12', fontSize: '0.75rem', margin: '0 0 0.5rem 0' }}>Tasa de Minería</p>
-                      <p style={{ color: '#ea580c', fontSize: '1.5rem', fontWeight: '700', margin: 0 }}>
-                        {analysis.result.statistics.mining_rate}%
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {renderStatistics()}
 
-              {/* Suspicious IPs */}
-              {analysis.result?.statistics?.suspicious_ips && analysis.result.statistics.suspicious_ips.length > 0 && (
+              {/* Suspicious IPs - only for cryptomining */}
+              {analysis.result && (analysis.result as any).statistics?.suspicious_ips && (analysis.result as any).statistics.suspicious_ips.length > 0 && (
                 <div>
                   <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
                     IPs Sospechosas (Top 10)
@@ -261,7 +547,7 @@ export default function AnalysisDetail() {
                         </tr>
                       </thead>
                       <tbody>
-                        {analysis.result.statistics.suspicious_ips.map((ipInfo: any, idx: number) => (
+                        {(analysis.result.statistics as any).suspicious_ips.map((ipInfo: any, idx: number) => (
                           <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
                             <td style={{ padding: '0.75rem', fontFamily: 'monospace', color: '#1e293b', fontSize: '0.875rem' }}>
                               {ipInfo.ip}
@@ -317,55 +603,9 @@ export default function AnalysisDetail() {
           {activeTab === 'results' && (
             <div>
               <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
-                Predicciones por Paquete
+                Resultados del Análisis
               </h3>
-              {analysis.result?.predictions && analysis.result.predictions.length > 0 ? (
-                <div style={{ overflowX: 'auto', maxHeight: '600px', overflowY: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-                    <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8fafc', zIndex: 1 }}>
-                      <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', color: '#64748b', fontWeight: '600' }}>Row ID</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', color: '#64748b', fontWeight: '600' }}>Src IP</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', color: '#64748b', fontWeight: '600' }}>Dest IP</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'center', color: '#64748b', fontWeight: '600' }}>Dest Port</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'center', color: '#64748b', fontWeight: '600' }}>Predicción</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'right', color: '#64748b', fontWeight: '600' }}>Confianza</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'right', color: '#64748b', fontWeight: '600' }}>Score</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analysis.result.predictions.map((pred: any) => (
-                        <tr key={pred.row_id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <td style={{ padding: '0.75rem', fontFamily: 'monospace', color: '#64748b' }}>{pred.row_id}</td>
-                          <td style={{ padding: '0.75rem', fontFamily: 'monospace', color: '#1e293b' }}>{pred.packet_info.src_ip}</td>
-                          <td style={{ padding: '0.75rem', fontFamily: 'monospace', color: '#1e293b' }}>{pred.packet_info.dest_ip}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'center', fontFamily: 'monospace', color: '#64748b' }}>{pred.packet_info.dest_port}</td>
-                          <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                            <span style={{
-                              padding: '0.25rem 0.75rem',
-                              borderRadius: '9999px',
-                              fontSize: '0.75rem',
-                              fontWeight: '600',
-                              backgroundColor: pred.prediction.is_mining ? '#fef2f2' : '#f0fdf4',
-                              color: pred.prediction.is_mining ? '#dc2626' : '#16a34a'
-                            }}>
-                              {pred.prediction.is_mining ? 'MINERÍA' : 'REGULAR'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#1e293b' }}>
-                            {(pred.prediction.confidence * 100).toFixed(2)}%
-                          </td>
-                          <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: pred.prediction.anomaly_score > 0.5 ? '#dc2626' : '#16a34a' }}>
-                            {pred.prediction.anomaly_score.toFixed(4)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p style={{ color: '#64748b', fontSize: '0.875rem' }}>No hay resultados disponibles</p>
-              )}
+              {renderResults()}
             </div>
           )}
 
@@ -736,7 +976,7 @@ export default function AnalysisDetail() {
                     <div style={{ padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
                       <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.5rem 0' }}>Throughput</p>
                       <p style={{ color: '#1e293b', fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
-                        {analysis.result.metadata.throughput_packets_per_sec?.toFixed(2)} pkt/s
+                        {(analysis.result.metadata as any).throughput_packets_per_sec?.toFixed(2) || 'N/A'} {(analysis.result.metadata as any).throughput_packets_per_sec ? 'pkt/s' : ''}
                       </p>
                     </div>
                     <div style={{ padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
