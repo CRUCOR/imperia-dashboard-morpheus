@@ -1,8 +1,3 @@
-/**
- * Analysis Detail Page - Universal support for 6 models
- * Shows ALL results in table format
- */
-
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { AlertCircle, Eye, FileText, Activity, ArrowLeft } from 'lucide-react';
@@ -12,16 +7,6 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import StatusBadge from '../components/StatusBadge';
 import apiService from '../services/api.service';
 import type { Analysis } from '../types';
-
-const getStatusLabel = (status: string): string => {
-  const statusMap: Record<string, string> = {
-    'pending': 'Pendiente',
-    'processing': 'Procesando',
-    'completed': 'Completado',
-    'failed': 'Fallido'
-  };
-  return statusMap[status] || status;
-};
 
 export default function AnalysisDetail() {
   const { analysisId } = useParams<{ analysisId: string }>();
