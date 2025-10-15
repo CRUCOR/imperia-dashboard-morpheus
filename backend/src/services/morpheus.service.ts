@@ -49,9 +49,7 @@ export class MorpheusService {
     file: Express.Multer.File,
     modelName: string,
     analysisId: string,
-    pipelineBatchSize?: number,
-    modelMaxBatchSize?: number,
-    numThreads?: number
+    modelParameters?: any
   ): Promise<any> {
     try {
       const formData = new FormData();
@@ -62,15 +60,13 @@ export class MorpheusService {
       formData.append('model_name', modelName);
       formData.append('analysisId', analysisId);
 
-      // Add ABP parameters if provided
-      if (pipelineBatchSize !== undefined) {
-        formData.append('pipeline_batch_size', pipelineBatchSize.toString());
-      }
-      if (modelMaxBatchSize !== undefined) {
-        formData.append('model_max_batch_size', modelMaxBatchSize.toString());
-      }
-      if (numThreads !== undefined) {
-        formData.append('num_threads', numThreads.toString());
+      // Add model-specific parameters
+      if (modelParameters) {
+        Object.entries(modelParameters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            formData.append(key, value.toString());
+          }
+        });
       }
 
       const response = await axios.post(`${this.baseUrl}/predict`, formData, {

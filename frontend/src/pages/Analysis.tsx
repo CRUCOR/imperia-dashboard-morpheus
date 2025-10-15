@@ -11,7 +11,8 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import StatusBadge from '../components/StatusBadge';
 import apiService from '../services/api.service';
 import socketService from '../services/socket.service';
-import type { Analysis, AnalysisProgress } from '../types';
+import type { Analysis, AnalysisProgress, ModelType } from '../types';
+import { MODEL_NAMES, MODEL_DESCRIPTIONS } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -35,11 +36,42 @@ export default function AnalysisPage() {
   // Form state
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [formData, setFormData] = useState({
-    model_name: 'morpheus-abp',
+  const [selectedModel, setSelectedModel] = useState<ModelType>('cryptomining');
+  
+  // Model-specific parameters
+  const [cryptominingParams, setCryptominingParams] = useState({
     pipeline_batch_size: '256',
     model_max_batch_size: '32',
     num_threads: '4'
+  });
+  
+  const [fingerprintParams, setFingerprintParams] = useState({
+    algorithm: 'sha256',
+    include_metadata: true
+  });
+  
+  const [sensitiveInfoParams, setSensitiveInfoParams] = useState({
+    scan_pii: true,
+    scan_credentials: true,
+    scan_api_keys: true,
+    confidence_threshold: '0.7'
+  });
+  
+  const [phishingParams, setPhishingParams] = useState({
+    check_urls: true,
+    check_emails: true,
+    analyze_content: true
+  });
+  
+  const [fraudParams, setFraudParams] = useState({
+    transaction_threshold: '1000',
+    risk_level: 'medium'
+  });
+  
+  const [ransomwareParams, setRansomwareParams] = useState({
+    scan_encrypted_files: true,
+    check_extensions: true,
+    analyze_behavior: true
   });
 
   useEffect(() => {
@@ -104,17 +136,36 @@ export default function AnalysisPage() {
 
     try {
       setUploading(true);
+      
+      // Build form data with model-specific parameters
+      const formData: any = { model_name: selectedModel };
+      
+      switch (selectedModel) {
+        case 'cryptomining':
+          Object.assign(formData, cryptominingParams);
+          break;
+        case 'digital-fingerprint':
+          Object.assign(formData, fingerprintParams);
+          break;
+        case 'sensitive-info':
+          Object.assign(formData, sensitiveInfoParams);
+          break;
+        case 'phishing':
+          Object.assign(formData, phishingParams);
+          break;
+        case 'fraud-detection':
+          Object.assign(formData, fraudParams);
+          break;
+        case 'ransomware':
+          Object.assign(formData, ransomwareParams);
+          break;
+      }
+      
       await apiService.uploadFile(file, formData);
       
       // Reset form
       setFile(null);
       setShowNewAnalysisForm(false);
-      setFormData({
-        model_name: 'morpheus-abp',
-        pipeline_batch_size: '256',
-        model_max_batch_size: '32',
-        num_threads: '4'
-      });
 
       // Reload analyses
       await loadAnalyses();
@@ -161,127 +212,404 @@ export default function AnalysisPage() {
         <Card title="Configurar Análisis">
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              
               {/* File Input */}
               <div>
-                <label style={{ display: 'block', color: '#1e293b', fontWeight: '500', marginBottom: '0.5rem' }}>
-                  Dataset
+                <label style={{ display: 'block', color: '#1e293b', fontWeight: '600', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                  Archivo de Datos *
                 </label>
                 <input
                   type="file"
                   onChange={handleFileChange}
-                  accept=".jsonlines,.jsonl,.ndjson,.json,.csv,.parquet"
+                  accept=".jsonlines,.jsonl,.ndjson,.json"
+                  required
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    border: '1px solid #e2e8f0',
+                    border: '2px solid #e2e8f0',
                     borderRadius: '0.5rem',
-                    fontSize: '0.875rem'
+                    fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.2s'
                   }}
                 />
                 {file && (
-                  <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#64748b' }}>
-                    Archivo seleccionado: {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
+                  <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#10b981', fontWeight: '500' }}>
+                    ✓ {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
                   </p>
                 )}
+                <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#64748b' }}>
+                  Formatos soportados: .jsonlines, .jsonl, .ndjson
+                </p>
               </div>
 
-              {/* Model Name */}
+              {/* Model Selection */}
               <div>
-                <label style={{ display: 'block', color: '#1e293b', fontWeight: '500', marginBottom: '0.5rem' }}>
-                  Nombre del Modelo
+                <label style={{ display: 'block', color: '#1e293b', fontWeight: '600', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                  Modelo de Análisis *
                 </label>
-                <input
-                  type="text"
-                  value={formData.model_name}
-                  onChange={(e) => setFormData({ ...formData, model_name: e.target.value })}
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value as ModelType)}
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    border: '1px solid #e2e8f0',
+                    border: '2px solid #e2e8f0',
                     borderRadius: '0.5rem',
-                    fontSize: '0.875rem'
+                    fontSize: '0.875rem',
+                    backgroundColor: 'white',
+                    cursor: 'pointer'
                   }}
-                />
+                >
+                  <option value="cryptomining">⛏️ {MODEL_NAMES['cryptomining']}</option>
+                  <option value="digital-fingerprint">🔐 {MODEL_NAMES['digital-fingerprint']}</option>
+                  <option value="sensitive-info">🔍 {MODEL_NAMES['sensitive-info']}</option>
+                  <option value="phishing">🎣 {MODEL_NAMES['phishing']}</option>
+                  <option value="fraud-detection">💰 {MODEL_NAMES['fraud-detection']}</option>
+                  <option value="ransomware">🦠 {MODEL_NAMES['ransomware']}</option>
+                </select>
+                <p style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#64748b', lineHeight: '1.5' }}>
+                  {MODEL_DESCRIPTIONS[selectedModel]}
+                </p>
               </div>
 
-              {/* ABP Parameters Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', color: '#1e293b', fontWeight: '500', marginBottom: '0.5rem' }}>
-                    Pipeline Batch Size
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.pipeline_batch_size}
-                    onChange={(e) => setFormData({ ...formData, pipeline_batch_size: e.target.value })}
-                    min="1"
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '0.5rem',
-                      fontSize: '0.875rem'
-                    }}
-                  />
-                </div>
+              {/* Model-specific Parameters */}
+              <div style={{ 
+                backgroundColor: '#f8fafc', 
+                border: '1px solid #e2e8f0', 
+                borderRadius: '0.5rem', 
+                padding: '1.5rem' 
+              }}>
+                <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b', fontSize: '1rem', fontWeight: '600' }}>
+                  Parámetros del Modelo
+                </h3>
 
-                <div>
-                  <label style={{ display: 'block', color: '#1e293b', fontWeight: '500', marginBottom: '0.5rem' }}>
-                    Model Max Batch Size
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.model_max_batch_size}
-                    onChange={(e) => setFormData({ ...formData, model_max_batch_size: e.target.value })}
-                    min="1"
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '0.5rem',
-                      fontSize: '0.875rem'
-                    }}
-                  />
-                </div>
+                {/* Cryptomining Parameters */}
+                {selectedModel === 'cryptomining' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', color: '#475569', fontWeight: '500', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                        Pipeline Batch Size
+                      </label>
+                      <input
+                        type="number"
+                        value={cryptominingParams.pipeline_batch_size}
+                        onChange={(e) => setCryptominingParams({ ...cryptominingParams, pipeline_batch_size: e.target.value })}
+                        min="1"
+                        max="1024"
+                        style={{
+                          width: '100%',
+                          padding: '0.625rem',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem'
+                        }}
+                      />
+                      <p style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
+                        Tamaño de lote para pipeline
+                      </p>
+                    </div>
 
-                <div>
-                  <label style={{ display: 'block', color: '#1e293b', fontWeight: '500', marginBottom: '0.5rem' }}>
-                    Number of Threads
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.num_threads}
-                    onChange={(e) => setFormData({ ...formData, num_threads: e.target.value })}
-                    min="1"
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '0.5rem',
-                      fontSize: '0.875rem'
-                    }}
-                  />
-                </div>
+                    <div>
+                      <label style={{ display: 'block', color: '#475569', fontWeight: '500', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                        Model Max Batch Size
+                      </label>
+                      <input
+                        type="number"
+                        value={cryptominingParams.model_max_batch_size}
+                        onChange={(e) => setCryptominingParams({ ...cryptominingParams, model_max_batch_size: e.target.value })}
+                        min="1"
+                        max="256"
+                        style={{
+                          width: '100%',
+                          padding: '0.625rem',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem'
+                        }}
+                      />
+                      <p style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
+                        Tamaño máximo de lote del modelo
+                      </p>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', color: '#475569', fontWeight: '500', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                        Number of Threads
+                      </label>
+                      <input
+                        type="number"
+                        value={cryptominingParams.num_threads}
+                        onChange={(e) => setCryptominingParams({ ...cryptominingParams, num_threads: e.target.value })}
+                        min="1"
+                        max="32"
+                        style={{
+                          width: '100%',
+                          padding: '0.625rem',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem'
+                        }}
+                      />
+                      <p style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
+                        Número de hilos de procesamiento
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Digital Fingerprint Parameters */}
+                {selectedModel === 'digital-fingerprint' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', color: '#475569', fontWeight: '500', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                        Algoritmo de Hash
+                      </label>
+                      <select
+                        value={fingerprintParams.algorithm}
+                        onChange={(e) => setFingerprintParams({ ...fingerprintParams, algorithm: e.target.value as any })}
+                        style={{
+                          width: '100%',
+                          padding: '0.625rem',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem',
+                          backgroundColor: 'white'
+                        }}
+                      >
+                        <option value="sha256">SHA-256</option>
+                        <option value="md5">MD5</option>
+                        <option value="ssdeep">SSDeep (Fuzzy)</option>
+                      </select>
+                      <p style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
+                        Algoritmo para generar hashes
+                      </p>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: '500', fontSize: '0.875rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={fingerprintParams.include_metadata}
+                          onChange={(e) => setFingerprintParams({ ...fingerprintParams, include_metadata: e.target.checked })}
+                          style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
+                        />
+                        Incluir Metadatos
+                      </label>
+                      <p style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b', marginLeft: '1.625rem' }}>
+                        Timestamps y tamaños de archivo
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sensitive Info Parameters */}
+                {selectedModel === 'sensitive-info' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: '500', fontSize: '0.875rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={sensitiveInfoParams.scan_pii}
+                          onChange={(e) => setSensitiveInfoParams({ ...sensitiveInfoParams, scan_pii: e.target.checked })}
+                          style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
+                        />
+                        Escanear PII (emails, teléfonos, SSN)
+                      </label>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: '500', fontSize: '0.875rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={sensitiveInfoParams.scan_credentials}
+                          onChange={(e) => setSensitiveInfoParams({ ...sensitiveInfoParams, scan_credentials: e.target.checked })}
+                          style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
+                        />
+                        Escanear Credenciales (passwords)
+                      </label>
+
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: '500', fontSize: '0.875rem', cursor: 'pointer' }}>
+                        <input
+                          type="checkbox"
+                          checked={sensitiveInfoParams.scan_api_keys}
+                          onChange={(e) => setSensitiveInfoParams({ ...sensitiveInfoParams, scan_api_keys: e.target.checked })}
+                          style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
+                        />
+                        Escanear API Keys y Tokens
+                      </label>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', color: '#475569', fontWeight: '500', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                        Umbral de Confianza
+                      </label>
+                      <input
+                        type="number"
+                        value={sensitiveInfoParams.confidence_threshold}
+                        onChange={(e) => setSensitiveInfoParams({ ...sensitiveInfoParams, confidence_threshold: e.target.value })}
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        style={{
+                          width: '200px',
+                          padding: '0.625rem',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem'
+                        }}
+                      />
+                      <p style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
+                        Nivel mínimo de confianza (0.0 - 1.0)
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Phishing Parameters */}
+                {selectedModel === 'phishing' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: '500', fontSize: '0.875rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={phishingParams.check_urls}
+                        onChange={(e) => setPhishingParams({ ...phishingParams, check_urls: e.target.checked })}
+                        style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
+                      />
+                      Verificar URLs y Dominios
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: '500', fontSize: '0.875rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={phishingParams.check_emails}
+                        onChange={(e) => setPhishingParams({ ...phishingParams, check_emails: e.target.checked })}
+                        style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
+                      />
+                      Verificar Correos Electrónicos
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: '500', fontSize: '0.875rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={phishingParams.analyze_content}
+                        onChange={(e) => setPhishingParams({ ...phishingParams, analyze_content: e.target.checked })}
+                        style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
+                      />
+                      Analizar Contenido y Keywords
+                    </label>
+                  </div>
+                )}
+
+                {/* Fraud Detection Parameters */}
+                {selectedModel === 'fraud-detection' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', color: '#475569', fontWeight: '500', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                        Umbral de Transacción ($)
+                      </label>
+                      <input
+                        type="number"
+                        value={fraudParams.transaction_threshold}
+                        onChange={(e) => setFraudParams({ ...fraudParams, transaction_threshold: e.target.value })}
+                        min="0"
+                        step="100"
+                        style={{
+                          width: '100%',
+                          padding: '0.625rem',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem'
+                        }}
+                      />
+                      <p style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
+                        Monto mínimo para alertas
+                      </p>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', color: '#475569', fontWeight: '500', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                        Nivel de Riesgo
+                      </label>
+                      <select
+                        value={fraudParams.risk_level}
+                        onChange={(e) => setFraudParams({ ...fraudParams, risk_level: e.target.value as any })}
+                        style={{
+                          width: '100%',
+                          padding: '0.625rem',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.875rem',
+                          backgroundColor: 'white'
+                        }}
+                      >
+                        <option value="low">Bajo</option>
+                        <option value="medium">Medio</option>
+                        <option value="high">Alto</option>
+                      </select>
+                      <p style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#64748b' }}>
+                        Sensibilidad del análisis
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Ransomware Parameters */}
+                {selectedModel === 'ransomware' && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: '500', fontSize: '0.875rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={ransomwareParams.scan_encrypted_files}
+                        onChange={(e) => setRansomwareParams({ ...ransomwareParams, scan_encrypted_files: e.target.checked })}
+                        style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
+                      />
+                      Escanear Archivos Cifrados
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: '500', fontSize: '0.875rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={ransomwareParams.check_extensions}
+                        onChange={(e) => setRansomwareParams({ ...ransomwareParams, check_extensions: e.target.checked })}
+                        style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
+                      />
+                      Verificar Extensiones Maliciosas
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#475569', fontWeight: '500', fontSize: '0.875rem', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={ransomwareParams.analyze_behavior}
+                        onChange={(e) => setRansomwareParams({ ...ransomwareParams, analyze_behavior: e.target.checked })}
+                        style={{ width: '1.125rem', height: '1.125rem', cursor: 'pointer' }}
+                      />
+                      Analizar Patrones de Comportamiento
+                    </label>
+                  </div>
+                )}
               </div>
 
               {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={uploading || !file}
-                style={{
-                  padding: '0.875rem',
-                  backgroundColor: uploading || !file ? '#cbd5e1' : '#f37726',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.5rem',
-                  cursor: uploading || !file ? 'not-allowed' : 'pointer',
-                  fontSize: '1rem',
-                  fontWeight: '600',
-                  transition: 'background-color 0.2s'
-                }}
-              >
-                {uploading ? 'Creando análisis...' : 'Crear Análisis'}
-              </button>
+              <div style={{ display: 'flex', gap: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                <button
+                  type="submit"
+                  disabled={uploading || !file}
+                  style={{
+                    flex: 1,
+                    padding: '0.875rem',
+                    backgroundColor: uploading || !file ? '#cbd5e1' : '#f37726',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    cursor: uploading || !file ? 'not-allowed' : 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    transition: 'all 0.2s',
+                    boxShadow: uploading || !file ? 'none' : '0 2px 4px rgba(243, 119, 38, 0.2)'
+                  }}
+                >
+                  {uploading ? '⏳ Creando análisis...' : '🚀 Crear Análisis'}
+                </button>
+              </div>
             </div>
           </form>
         </Card>

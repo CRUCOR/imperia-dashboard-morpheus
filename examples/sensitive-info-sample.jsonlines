@@ -1,0 +1,8 @@
+{"log": "Usuario: admin@empresa.com conectado desde 192.168.1.100", "timestamp": "2024-01-01T10:00:00", "source": "auth.log"}
+{"config": "DB_PASSWORD=MiClaveSecreta123! para producción", "timestamp": "2024-01-01T10:05:00", "source": "config.txt"}
+{"data": "Cliente: Juan Pérez, SSN: 123-45-6789, Phone: +1-555-123-4567", "timestamp": "2024-01-01T10:10:00", "source": "customers.csv"}
+{"api": "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE y AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "timestamp": "2024-01-01T10:15:00", "source": ".env"}
+{"payment": "Credit Card: 4532-1234-5678-9010, CVV: 123, Exp: 12/25", "timestamp": "2024-01-01T10:20:00", "source": "payments.log"}
+{"email": "Contacto: soporte@ejemplo.com, Tel: 555-9876", "timestamp": "2024-01-01T10:25:00", "source": "contacts.txt"}
+{"code": "API_KEY=sk_live_abc123xyz789def456ghi012jkl345mno678pqr901", "timestamp": "2024-01-01T10:30:00", "source": "app.py"}
+{"note": "Password para root: SuperSecretPass2024!", "timestamp": "2024-01-01T10:35:00", "source": "notes.txt"}

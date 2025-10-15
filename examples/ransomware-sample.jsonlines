@@ -1,0 +1,9 @@
+{"path": "/documents/report.pdf", "name": "report.pdf", "extension": ".pdf", "size": 1048576, "encrypted": false}
+{"path": "/documents/photo.jpg.encrypted", "name": "photo.jpg.encrypted", "extension": ".encrypted", "size": 2097152, "encrypted": true}
+{"path": "/documents/README_DECRYPT.txt", "name": "README_DECRYPT.txt", "extension": ".txt", "size": 512, "encrypted": false}
+{"path": "/data/file.docx", "name": "file.docx", "extension": ".docx", "size": 524288, "encrypted": false}
+{"path": "/data/backup.zip.locked", "name": "backup.zip.locked", "extension": ".locked", "size": 10485760, "encrypted": true}
+{"path": "/pictures/image1.png.crypto", "name": "image1.png.crypto", "extension": ".crypto", "size": 3145728, "encrypted": true}
+{"path": "/system/config.ini", "name": "config.ini", "extension": ".ini", "size": 4096, "encrypted": false}
+{"path": "/documents/presentation.pptx.wannacry", "name": "presentation.pptx.wannacry", "extension": ".wannacry", "size": 5242880, "encrypted": true}
+{"path": "/backup/HOWTO_DECRYPT.txt", "name": "HOWTO_DECRYPT.txt", "extension": ".txt", "size": 1024, "encrypted": false}
