@@ -1,6 +1,6 @@
 /**
- * Analysis Detail Page
- * View detailed analysis results - Light Theme
+ * Analysis Detail Page - Universal support for 6 models
+ * Shows ALL results in table format
  */
 
 import { useEffect, useState } from 'react';
@@ -51,53 +51,9 @@ export default function AnalysisDetail() {
     }
   };
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (error || !analysis) {
-    return (
-      <div>
-        <button
-          onClick={() => navigate('/analisis')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.75rem 1.5rem',
-            backgroundColor: '#64748b',
-            color: 'white',
-            border: 'none',
-            borderRadius: '0.5rem',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '500',
-            marginBottom: '2rem'
-          }}
-        >
-          <ArrowLeft size={16} />
-          Volver a Análisis
-        </button>
-        <Card>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#ef4444' }}>
-            <AlertCircle size={24} />
-            <div>
-              <p style={{ fontWeight: '600', margin: '0 0 0.5rem 0' }}>Error</p>
-              <p style={{ margin: 0, fontSize: '0.875rem' }}>{error || 'Análisis no encontrado'}</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
   // Render model-specific statistics
   const renderStatistics = () => {
-    if (!analysis.result) return null;
+    if (!analysis || !analysis.result) return null;
     const stats = analysis.result.statistics as any;
     if (!stats) return null;
 
@@ -122,9 +78,9 @@ export default function AnalysisDetail() {
     );
   };
 
-  // Render results based on model type
+  // Render results based on model type - SHOWS ALL RESULTS
   const renderResults = () => {
-    if (!analysis.result) return <p style={{ color: '#64748b' }}>No hay resultados disponibles</p>;
+    if (!analysis || !analysis.result) return <p style={{ color: '#64748b' }}>No hay resultados disponibles</p>;
     const result = analysis.result as any;
 
     // Detect which type of results we have
@@ -200,9 +156,9 @@ export default function AnalysisDetail() {
 
     return (
       <div>
-        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🔍 Información Confidencial Detectada ({findings.length})</h3>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🔍 Información Confidencial ({findings.length} registros)</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {findings.slice(0, 50).map((finding, idx) => {
+          {findings.slice(0, 100).map((finding, idx) => {
             const colors = getSeverityColor(finding.severity);
             return (
               <div key={idx} style={{ padding: '1rem', border: '1px solid #e2e8f0', borderRadius: '0.5rem', backgroundColor: '#fafafa' }}>
@@ -228,81 +184,120 @@ export default function AnalysisDetail() {
             );
           })}
         </div>
-        {findings.length > 50 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 50 de {findings.length} hallazgos</p>}
+        {findings.length > 100 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 100 de {findings.length} hallazgos</p>}
       </div>
     );
   };
 
   const renderCryptominingResults = (predictions: any[]) => {
-    const miningPredictions = predictions.filter((p: any) => p.prediction?.is_mining);
     return (
       <div>
-        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>⛏️ Detecciones de Criptominería ({miningPredictions.length}/{predictions.length})</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {miningPredictions.slice(0, 50).map((pred, idx) => (
-            <div key={idx} style={{ padding: '1rem', border: '1px solid #fee2e2', borderRadius: '0.5rem', backgroundColor: '#fef2f2' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <span style={{ fontWeight: '600', color: '#1e293b' }}>Paquete #{pred.row_id}</span>
-                <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
-                  MINING
-                </span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
-                <div><span style={{ color: '#64748b' }}>Probabilidad: </span><span style={{ fontWeight: '600' }}>{(pred.prediction.mining_probability * 100).toFixed(2)}%</span></div>
-                <div><span style={{ color: '#64748b' }}>Confianza: </span><span style={{ fontWeight: '600' }}>{(pred.prediction.confidence * 100).toFixed(2)}%</span></div>
-                <div><span style={{ color: '#64748b' }}>Anomalía: </span><span style={{ fontWeight: '600' }}>{pred.prediction.anomaly_score?.toFixed(2)}</span></div>
-              </div>
-              {pred.packet_info && (
-                <div style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#475569', padding: '0.5rem', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '0.25rem' }}>
-                  {pred.packet_info.src_ip}:{pred.packet_info.src_port} → {pred.packet_info.dest_ip}:{pred.packet_info.dest_port}
-                </div>
-              )}
-            </div>
-          ))}
+        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>⛏️ Análisis de Criptominería ({predictions.length} paquetes)</h3>
+        <div style={{ overflowX: 'auto', maxHeight: '600px', overflowY: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+            <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8fafc', zIndex: 1 }}>
+              <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>Row ID</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>IP Origen</th>
+                <th style={{ padding: '0.75rem', textAlign: 'left', fontWeight: '600', color: '#475569' }}>IP Destino</th>
+                <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#475569' }}>Puerto</th>
+                <th style={{ padding: '0.75rem', textAlign: 'center', fontWeight: '600', color: '#475569' }}>Clasificación</th>
+                <th style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#475569' }}>Probabilidad</th>
+                <th style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#475569' }}>Confianza</th>
+                <th style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#475569' }}>Anomalía</th>
+              </tr>
+            </thead>
+            <tbody>
+              {predictions.slice(0, 200).map((pred, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: pred.prediction?.is_mining ? '#fef2f2' : 'transparent' }}>
+                  <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem', color: '#64748b' }}>{pred.row_id}</td>
+                  <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem' }}>{pred.packet_info?.src_ip || 'N/A'}</td>
+                  <td style={{ padding: '0.75rem', fontFamily: 'monospace', fontSize: '0.75rem' }}>{pred.packet_info?.dest_ip || 'N/A'}</td>
+                  <td style={{ padding: '0.75rem', textAlign: 'center', fontFamily: 'monospace', fontSize: '0.75rem' }}>{pred.packet_info?.dest_port || 'N/A'}</td>
+                  <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                    <span style={{
+                      padding: '0.25rem 0.5rem',
+                      backgroundColor: pred.prediction?.is_mining ? '#fee2e2' : '#f0fdf4',
+                      color: pred.prediction?.is_mining ? '#991b1b' : '#14532d',
+                      borderRadius: '0.25rem',
+                      fontSize: '0.75rem',
+                      fontWeight: '600'
+                    }}>
+                      {pred.prediction?.is_mining ? 'MINERÍA' : 'NORMAL'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#1e293b' }}>
+                    {((pred.prediction?.mining_probability || 0) * 100).toFixed(2)}%
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'right', color: '#64748b' }}>
+                    {((pred.prediction?.confidence || 0) * 100).toFixed(2)}%
+                  </td>
+                  <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: (pred.prediction?.anomaly_score || 0) > 0.5 ? '#dc2626' : '#16a34a' }}>
+                    {(pred.prediction?.anomaly_score || 0).toFixed(4)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        {miningPredictions.length > 50 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 50 de {miningPredictions.length}</p>}
+        {predictions.length > 200 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 200 de {predictions.length} paquetes</p>}
       </div>
     );
   };
 
   const renderPhishingResults = (detections: any[]) => {
-    const phishingDetections = detections.filter((d: any) => d.is_phishing);
     return (
       <div>
-        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🎣 Detecciones de Phishing ({phishingDetections.length}/{detections.length})</h3>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🎣 Análisis de Phishing ({detections.length} registros)</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {phishingDetections.slice(0, 50).map((det, idx) => (
-            <div key={idx} style={{ padding: '1rem', border: '1px solid #fee2e2', borderRadius: '0.5rem', backgroundColor: '#fef2f2' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <span style={{ fontWeight: '600', color: '#1e293b' }}>Fila #{det.row_id}</span>
-                <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
-                  {(det.phishing_probability * 100).toFixed(1)}% PHISHING
-                </span>
+          {detections.slice(0, 100).map((det, idx) => {
+            const isPhishing = det.is_phishing || det.phishing_probability > 0.5;
+            const bgColor = isPhishing ? '#fef2f2' : '#f8fafc';
+            const borderColor = isPhishing ? '#fee2e2' : '#e2e8f0';
+            return (
+              <div key={idx} style={{ padding: '1rem', border: `1px solid ${borderColor}`, borderRadius: '0.5rem', backgroundColor: bgColor }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <span style={{ fontWeight: '600', color: '#1e293b' }}>Fila #{det.row_id}</span>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <span style={{ 
+                      padding: '0.25rem 0.5rem', 
+                      backgroundColor: isPhishing ? '#fee2e2' : '#f0fdf4', 
+                      color: isPhishing ? '#991b1b' : '#14532d', 
+                      borderRadius: '0.25rem', 
+                      fontSize: '0.75rem', 
+                      fontWeight: '600' 
+                    }}>
+                      {isPhishing ? 'PHISHING' : 'LEGÍTIMO'}
+                    </span>
+                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
+                      {(det.phishing_probability * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                </div>
+                {det.source && (
+                  <div style={{ fontSize: '0.875rem', fontFamily: 'monospace', padding: '0.5rem', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '0.25rem', marginBottom: '0.75rem', wordBreak: 'break-all' }}>
+                    {det.source.url || det.source.email || det.source.subject || 'N/A'}
+                  </div>
+                )}
+                {det.indicators && det.indicators.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {det.indicators.slice(0, 3).map((ind: any, i: number) => (
+                      <div key={i} style={{ fontSize: '0.75rem', padding: '0.5rem', backgroundColor: 'white', borderLeft: '3px solid #f59e0b', paddingLeft: '0.75rem' }}>
+                        <span style={{ fontWeight: '600', color: '#92400e' }}>[{ind.type}]</span> {ind.description}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              {det.source && (
-                <div style={{ fontSize: '0.875rem', fontFamily: 'monospace', padding: '0.5rem', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '0.25rem', marginBottom: '0.75rem', wordBreak: 'break-all' }}>
-                  {det.source.url || det.source.email || det.source.subject || 'N/A'}
-                </div>
-              )}
-              {det.indicators && det.indicators.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {det.indicators.slice(0, 3).map((ind: any, i: number) => (
-                    <div key={i} style={{ fontSize: '0.75rem', padding: '0.5rem', backgroundColor: 'white', borderLeft: '3px solid #f59e0b', paddingLeft: '0.75rem' }}>
-                      <span style={{ fontWeight: '600', color: '#92400e' }}>[{ind.type}]</span> {ind.description}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
-        {phishingDetections.length > 50 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 50 de {phishingDetections.length}</p>}
+        {detections.length > 100 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 100 de {detections.length} registros</p>}
       </div>
     );
   };
 
   const renderFraudResults = (transactions: any[]) => {
-    const fraudulent = transactions.filter((t: any) => t.is_fraudulent);
     const getRiskColor = (level: string) => {
       const colors: Record<string, { bg: string; text: string }> = {
         critical: { bg: '#fee2e2', text: '#991b1b' },
@@ -315,19 +310,32 @@ export default function AnalysisDetail() {
 
     return (
       <div>
-        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>💰 Transacciones Fraudulentas ({fraudulent.length}/{transactions.length})</h3>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>💰 Análisis de Transacciones ({transactions.length} registros)</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {fraudulent.slice(0, 50).map((tx, idx) => {
+          {transactions.slice(0, 100).map((tx, idx) => {
             const colors = getRiskColor(tx.risk_level);
+            const isFraud = tx.is_fraudulent || tx.fraud_probability > 0.5;
+            const bgColor = isFraud ? '#fef2f2' : '#f8fafc';
+            const borderColor = isFraud ? '#fee2e2' : '#e2e8f0';
             return (
-              <div key={idx} style={{ padding: '1rem', border: '1px solid #fee2e2', borderRadius: '0.5rem', backgroundColor: '#fef2f2' }}>
+              <div key={idx} style={{ padding: '1rem', border: `1px solid ${borderColor}`, borderRadius: '0.5rem', backgroundColor: bgColor }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                   <span style={{ fontWeight: '600', color: '#1e293b', fontSize: '0.875rem' }}>TX: {tx.transaction_id}</span>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <span style={{ 
+                      padding: '0.25rem 0.5rem', 
+                      backgroundColor: isFraud ? '#fee2e2' : '#f0fdf4', 
+                      color: isFraud ? '#991b1b' : '#14532d', 
+                      borderRadius: '0.25rem', 
+                      fontSize: '0.75rem', 
+                      fontWeight: '600' 
+                    }}>
+                      {isFraud ? 'FRAUDULENTA' : 'LEGÍTIMA'}
+                    </span>
                     <span style={{ padding: '0.25rem 0.5rem', backgroundColor: colors.bg, color: colors.text, borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
                       {tx.risk_level.toUpperCase()}
                     </span>
-                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
+                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
                       {(tx.fraud_probability * 100).toFixed(1)}%
                     </span>
                   </div>
@@ -349,13 +357,12 @@ export default function AnalysisDetail() {
             );
           })}
         </div>
-        {fraudulent.length > 50 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 50 de {fraudulent.length}</p>}
+        {transactions.length > 100 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 100 de {transactions.length} transacciones</p>}
       </div>
     );
   };
 
   const renderRansomwareResults = (threats: any[]) => {
-    const ransomware = threats.filter((t: any) => t.is_ransomware);
     const getThreatColor = (level: string) => {
       const colors: Record<string, { bg: string; text: string }> = {
         critical: { bg: '#fee2e2', text: '#991b1b' },
@@ -368,19 +375,32 @@ export default function AnalysisDetail() {
 
     return (
       <div>
-        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🦠 Amenazas de Ransomware ({ransomware.length}/{threats.length})</h3>
+        <h3 style={{ margin: '0 0 1rem 0', color: '#1e293b' }}>🦠 Análisis de Ransomware ({threats.length} registros)</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {ransomware.slice(0, 50).map((threat, idx) => {
+          {threats.slice(0, 100).map((threat, idx) => {
             const colors = getThreatColor(threat.threat_level);
+            const isRansomware = threat.is_ransomware || threat.ransomware_probability > 0.5;
+            const bgColor = isRansomware ? '#fef2f2' : '#f8fafc';
+            const borderColor = isRansomware ? '#fee2e2' : '#e2e8f0';
             return (
-              <div key={idx} style={{ padding: '1rem', border: '1px solid #fee2e2', borderRadius: '0.5rem', backgroundColor: '#fef2f2' }}>
+              <div key={idx} style={{ padding: '1rem', border: `1px solid ${borderColor}`, borderRadius: '0.5rem', backgroundColor: bgColor }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                   <span style={{ fontWeight: '600', color: '#1e293b' }}>Fila #{threat.row_id}</span>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <span style={{ 
+                      padding: '0.25rem 0.5rem', 
+                      backgroundColor: isRansomware ? '#fee2e2' : '#f0fdf4', 
+                      color: isRansomware ? '#991b1b' : '#14532d', 
+                      borderRadius: '0.25rem', 
+                      fontSize: '0.75rem', 
+                      fontWeight: '600' 
+                    }}>
+                      {isRansomware ? 'RANSOMWARE' : 'LIMPIO'}
+                    </span>
                     <span style={{ padding: '0.25rem 0.5rem', backgroundColor: colors.bg, color: colors.text, borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: '600' }}>
                       {threat.threat_level.toUpperCase()}
                     </span>
-                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
+                    <span style={{ padding: '0.25rem 0.5rem', backgroundColor: '#dbeafe', color: '#1e40af', borderRadius: '0.25rem', fontSize: '0.75rem' }}>
                       {(threat.ransomware_probability * 100).toFixed(1)}%
                     </span>
                   </div>
@@ -408,7 +428,7 @@ export default function AnalysisDetail() {
             );
           })}
         </div>
-        {ransomware.length > 50 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 50 de {ransomware.length}</p>}
+        {threats.length > 100 && <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#64748b', textAlign: 'center' }}>Mostrando 100 de {threats.length} amenazas</p>}
       </div>
     );
   };
@@ -417,59 +437,84 @@ export default function AnalysisDetail() {
     { id: 'overview', label: 'Resumen', icon: FileText },
     { id: 'results', label: 'Resultados', icon: Eye },
     { id: 'metrics', label: 'Métricas', icon: Activity },
-    { id: 'params', label: 'Parámetros', icon: FileText }
+    { id: 'params', label: 'Parámetros', icon: FileText },
   ];
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error || !analysis) {
+    return (
+      <Card>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#ef4444' }}>
+          <AlertCircle size={24} />
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600' }}>Error</h3>
+            <p style={{ margin: '0.25rem 0 0', color: '#64748b' }}>{error || 'Análisis no encontrado'}</p>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>
-          Detalle del Análisis
-        </h1>
-        <button
-          onClick={() => navigate('/analisis')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            padding: '0.75rem 1.5rem',
-            backgroundColor: '#64748b',
-            color: 'white',
-            border: 'none',
-            borderRadius: '0.5rem',
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-            fontWeight: '500'
-          }}
-        >
-          <ArrowLeft size={16} />
-          Volver
-        </button>
-      </div>
+      {/* Back Button */}
+      <button
+        onClick={() => navigate('/analisis')}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.5rem 1rem',
+          backgroundColor: 'transparent',
+          color: '#64748b',
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: '0.875rem',
+          marginBottom: '1.5rem',
+          transition: 'color 0.2s'
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = '#f37726')}
+        onMouseLeave={(e) => (e.currentTarget.style.color = '#64748b')}
+      >
+        <ArrowLeft size={16} />
+        Volver a Análisis
+      </button>
 
-      {/* Metadata Card */}
+      {/* Header Card */}
       <Card>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div style={{ marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '1rem' }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700', color: '#1e293b' }}>
+                Análisis #{analysis.analysisId?.slice(0, 8)}
+              </h2>
+              <p style={{ margin: '0.5rem 0 0', color: '#64748b', fontSize: '0.875rem' }}>
+                Creado: {new Date(analysis.createdAt).toLocaleString('es-ES')}
+              </p>
+            </div>
+            <StatusBadge status={analysis.status} />
+          </div>
+        </div>
+
+        {/* Summary Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
           <div>
-            <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0', textTransform: 'uppercase' }}>ID de Análisis</p>
-            <p style={{ color: '#1e293b', fontWeight: '600', margin: 0, fontFamily: 'monospace', fontSize: '0.875rem' }}>
-              {analysis.analysisId}
+            <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0', textTransform: 'uppercase' }}>Archivo</p>
+            <p style={{ color: '#1e293b', fontWeight: '600', margin: 0, fontSize: '0.875rem' }}>
+              {analysis.fileMetadata?.file_name || 'N/A'}
             </p>
           </div>
           <div>
-            <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0', textTransform: 'uppercase' }}>Estado</p>
-            <StatusBadge status={analysis.status} label={getStatusLabel(analysis.status)} />
-          </div>
-          <div>
-            <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0', textTransform: 'uppercase' }}>Modelo</p>
+            <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0', textTransform: 'uppercase' }}>Tamaño</p>
             <p style={{ color: '#1e293b', fontWeight: '600', margin: 0, fontSize: '0.875rem' }}>
-              {analysis.result?.model || analysis.modelName}
-            </p>
-          </div>
-          <div>
-            <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0', textTransform: 'uppercase' }}>Duración</p>
-            <p style={{ color: '#1e293b', fontWeight: '600', margin: 0, fontSize: '0.875rem' }}>
-              {analysis.durationMs ? `${(analysis.durationMs / 1000).toFixed(2)}s` : 'N/A'}
+              {analysis.result?.metadata?.file_size_mb?.toFixed(2) || 'N/A'} MB
             </p>
           </div>
           <div>
@@ -479,17 +524,15 @@ export default function AnalysisDetail() {
             </p>
           </div>
           <div>
-            <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0', textTransform: 'uppercase' }}>Tasa de Detección</p>
+            <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0', textTransform: 'uppercase' }}>Modelo</p>
             <p style={{ color: '#1e293b', fontWeight: '600', margin: 0, fontSize: '0.875rem' }}>
-              {analysis.result && (analysis.result.statistics as any)?.mining_rate !== undefined 
-                ? `${(analysis.result.statistics as any).mining_rate}%` 
-                : 'N/A'}
+              {analysis.modelName.replace(/-/g, ' ').toUpperCase()}
             </p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div style={{ borderBottom: '2px solid #e2e8f0', marginBottom: '1.5rem' }}>
+        <div style={{ borderBottom: '2px solid #e2e8f0', marginTop: '1.5rem' }}>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             {tabs.map(tab => {
               const Icon = tab.icon;
@@ -522,81 +565,10 @@ export default function AnalysisDetail() {
         </div>
 
         {/* Tab Content */}
-        <div>
+        <div style={{ marginTop: '1.5rem' }}>
           {activeTab === 'overview' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {/* Statistics */}
               {renderStatistics()}
-
-              {/* Suspicious IPs - only for cryptomining */}
-              {analysis.result && (analysis.result as any).statistics?.suspicious_ips && (analysis.result as any).statistics.suspicious_ips.length > 0 && (
-                <div>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
-                    IPs Sospechosas (Top 10)
-                  </h3>
-                  <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                          <th style={{ padding: '0.75rem', textAlign: 'left', color: '#64748b', fontWeight: '600', fontSize: '0.875rem' }}>
-                            IP Address
-                          </th>
-                          <th style={{ padding: '0.75rem', textAlign: 'right', color: '#64748b', fontWeight: '600', fontSize: '0.875rem' }}>
-                            Paquetes de Minería
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(analysis.result.statistics as any).suspicious_ips.map((ipInfo: any, idx: number) => (
-                          <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                            <td style={{ padding: '0.75rem', fontFamily: 'monospace', color: '#1e293b', fontSize: '0.875rem' }}>
-                              {ipInfo.ip}
-                            </td>
-                            <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: '600', color: '#dc2626', fontSize: '0.875rem' }}>
-                              {ipInfo.mining_packets.toLocaleString()}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* File Metadata */}
-              {analysis.fileMetadata && (
-                <div>
-                  <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
-                    Información del Archivo
-                  </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    <div>
-                      <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0' }}>Nombre</p>
-                      <p style={{ color: '#1e293b', fontWeight: '500', margin: 0, fontSize: '0.875rem' }}>
-                        {(analysis.fileMetadata as any).file_name}
-                      </p>
-                    </div>
-                    <div>
-                      <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0' }}>Tamaño</p>
-                      <p style={{ color: '#1e293b', fontWeight: '500', margin: 0, fontSize: '0.875rem' }}>
-                        {(analysis.fileMetadata as any).file_size_mb?.toFixed(2)} MB
-                      </p>
-                    </div>
-                    <div>
-                      <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0' }}>Tipo</p>
-                      <p style={{ color: '#1e293b', fontWeight: '500', margin: 0, fontSize: '0.875rem' }}>
-                        {(analysis.fileMetadata as any).file_type}
-                      </p>
-                    </div>
-                    <div>
-                      <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.25rem 0' }}>Filas</p>
-                      <p style={{ color: '#1e293b', fontWeight: '500', margin: 0, fontSize: '0.875rem' }}>
-                        {((analysis.fileMetadata as any).num_rows || analysis.inputData?.num_rows)?.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -620,151 +592,18 @@ export default function AnalysisDetail() {
                   {analysis.metrics.gpu_usage && analysis.metrics.gpu_usage.length > 0 && (
                     <div>
                       <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
-                        Uso de GPU durante la Ejecución
+                        Uso de GPU
                       </h4>
                       <div style={{ backgroundColor: '#ffffff', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
                         <ResponsiveContainer width="100%" height={300}>
                           <LineChart data={analysis.metrics.gpu_usage}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis 
-                              dataKey="timestamp" 
-                              stroke="#64748b"
-                              tick={{ fill: '#64748b', fontSize: 11 }}
-                              tickFormatter={(_value, index) => {
-                                const totalPoints = analysis.metrics?.gpu_usage?.length || 1;
-                                const interval = Math.ceil(totalPoints / 5);
-                                if (index % interval === 0) {
-                                  return `${Math.floor((index / totalPoints) * 100)}%`;
-                                }
-                                return '';
-                              }}
-                            />
-                            <YAxis 
-                              stroke="#64748b" 
-                              tick={{ fill: '#64748b', fontSize: 12 }}
-                              domain={[0, 100]}
-                              label={{ 
-                                value: 'Porcentaje (%)', 
-                                angle: -90, 
-                                position: 'insideLeft',
-                                style: { fill: '#64748b', fontSize: 12 }
-                              }}
-                            />
-                            <Tooltip 
-                              contentStyle={{ 
-                                backgroundColor: '#ffffff', 
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '0.5rem',
-                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                                padding: '0.75rem'
-                              }}
-                              labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '0.5rem' }}
-                              formatter={(value: number) => [`${value.toFixed(2)}%`, 'Uso de GPU']}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="usage" 
-                              stroke="#f37726" 
-                              strokeWidth={2}
-                              name="Uso de GPU"
-                              dot={false}
-                              isAnimationActive={false}
-                            />
+                            <XAxis dataKey="timestamp" stroke="#64748b" tick={{ fill: '#64748b', fontSize: 11 }} />
+                            <YAxis stroke="#64748b" tick={{ fill: '#64748b', fontSize: 12 }} domain={[0, 100]} />
+                            <Tooltip />
+                            <Line type="monotone" dataKey="usage" stroke="#f37726" strokeWidth={2} dot={false} />
                           </LineChart>
                         </ResponsiveContainer>
-                        <div style={{ 
-                          marginTop: '1rem', 
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          gap: '0.5rem'
-                        }}>
-                          <div style={{ 
-                            width: '16px', 
-                            height: '3px', 
-                            backgroundColor: '#f37726',
-                            borderRadius: '2px'
-                          }}></div>
-                          <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
-                            Uso de GPU
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* GPU Memory Chart */}
-                  {analysis.metrics.gpu_memory && analysis.metrics.gpu_memory.length > 0 && (
-                    <div>
-                      <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
-                        Memoria GPU durante la Ejecución
-                      </h4>
-                      <div style={{ backgroundColor: '#ffffff', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <LineChart data={analysis.metrics.gpu_memory}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis 
-                              dataKey="timestamp" 
-                              stroke="#64748b"
-                              tick={{ fill: '#64748b', fontSize: 11 }}
-                              tickFormatter={(_value, index) => {
-                                const totalPoints = analysis.metrics?.gpu_memory?.length || 1;
-                                const interval = Math.ceil(totalPoints / 5);
-                                if (index % interval === 0) {
-                                  return `${Math.floor((index / totalPoints) * 100)}%`;
-                                }
-                                return '';
-                              }}
-                            />
-                            <YAxis 
-                              stroke="#64748b" 
-                              tick={{ fill: '#64748b', fontSize: 12 }}
-                              label={{ 
-                                value: 'Memoria (MB)', 
-                                angle: -90, 
-                                position: 'insideLeft',
-                                style: { fill: '#64748b', fontSize: 12 }
-                              }}
-                            />
-                            <Tooltip 
-                              contentStyle={{ 
-                                backgroundColor: '#ffffff', 
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '0.5rem',
-                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                                padding: '0.75rem'
-                              }}
-                              labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '0.5rem' }}
-                              formatter={(value: number) => [`${value.toFixed(2)} MB`, 'Memoria GPU']}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="memory" 
-                              stroke="#8b5cf6" 
-                              strokeWidth={2}
-                              name="Memoria GPU"
-                              dot={false}
-                              isAnimationActive={false}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                        <div style={{ 
-                          marginTop: '1rem', 
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          gap: '0.5rem'
-                        }}>
-                          <div style={{ 
-                            width: '16px', 
-                            height: '3px', 
-                            backgroundColor: '#8b5cf6',
-                            borderRadius: '2px'
-                          }}></div>
-                          <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
-                            Memoria GPU
-                          </span>
-                        </div>
                       </div>
                     </div>
                   )}
@@ -773,210 +612,37 @@ export default function AnalysisDetail() {
                   {analysis.metrics.cpu_usage && analysis.metrics.cpu_usage.length > 0 && (
                     <div>
                       <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
-                        Uso de CPU durante la Ejecución
+                        Uso de CPU
                       </h4>
                       <div style={{ backgroundColor: '#ffffff', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
                         <ResponsiveContainer width="100%" height={300}>
                           <LineChart data={analysis.metrics.cpu_usage}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis 
-                              dataKey="timestamp" 
-                              stroke="#64748b"
-                              tick={{ fill: '#64748b', fontSize: 11 }}
-                              tickFormatter={(_value, index) => {
-                                const totalPoints = analysis.metrics?.cpu_usage?.length || 1;
-                                const interval = Math.ceil(totalPoints / 5);
-                                if (index % interval === 0) {
-                                  return `${Math.floor((index / totalPoints) * 100)}%`;
-                                }
-                                return '';
-                              }}
-                            />
-                            <YAxis 
-                              stroke="#64748b" 
-                              tick={{ fill: '#64748b', fontSize: 12 }}
-                              domain={[0, 100]}
-                              label={{ 
-                                value: 'Porcentaje (%)', 
-                                angle: -90, 
-                                position: 'insideLeft',
-                                style: { fill: '#64748b', fontSize: 12 }
-                              }}
-                            />
-                            <Tooltip 
-                              contentStyle={{ 
-                                backgroundColor: '#ffffff', 
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '0.5rem',
-                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                                padding: '0.75rem'
-                              }}
-                              labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '0.5rem' }}
-                              formatter={(value: number) => [`${value.toFixed(2)}%`, 'Uso de CPU']}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="usage" 
-                              stroke="#10b981" 
-                              strokeWidth={2}
-                              name="Uso de CPU"
-                              dot={false}
-                              isAnimationActive={false}
-                            />
+                            <XAxis dataKey="timestamp" stroke="#64748b" tick={{ fill: '#64748b', fontSize: 11 }} />
+                            <YAxis stroke="#64748b" tick={{ fill: '#64748b', fontSize: 12 }} domain={[0, 100]} />
+                            <Tooltip />
+                            <Line type="monotone" dataKey="usage" stroke="#3b82f6" strokeWidth={2} dot={false} />
                           </LineChart>
                         </ResponsiveContainer>
-                        <div style={{ 
-                          marginTop: '1rem', 
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          gap: '0.5rem'
-                        }}>
-                          <div style={{ 
-                            width: '16px', 
-                            height: '3px', 
-                            backgroundColor: '#10b981',
-                            borderRadius: '2px'
-                          }}></div>
-                          <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
-                            Uso de CPU
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* RAM Chart */}
-                  {analysis.metrics.ram_mb && analysis.metrics.ram_mb.length > 0 && (
-                    <div>
-                      <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
-                        Memoria RAM durante la Ejecución
-                      </h4>
-                      <div style={{ backgroundColor: '#ffffff', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <LineChart data={analysis.metrics.ram_mb}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis 
-                              dataKey="timestamp" 
-                              stroke="#64748b"
-                              tick={{ fill: '#64748b', fontSize: 11 }}
-                              tickFormatter={(_value, index) => {
-                                const totalPoints = analysis.metrics?.ram_mb?.length || 1;
-                                const interval = Math.ceil(totalPoints / 5);
-                                if (index % interval === 0) {
-                                  return `${Math.floor((index / totalPoints) * 100)}%`;
-                                }
-                                return '';
-                              }}
-                            />
-                            <YAxis 
-                              stroke="#64748b" 
-                              tick={{ fill: '#64748b', fontSize: 12 }}
-                              label={{ 
-                                value: 'Memoria (MB)', 
-                                angle: -90, 
-                                position: 'insideLeft',
-                                style: { fill: '#64748b', fontSize: 12 }
-                              }}
-                            />
-                            <Tooltip 
-                              contentStyle={{ 
-                                backgroundColor: '#ffffff', 
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '0.5rem',
-                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                                padding: '0.75rem'
-                              }}
-                              labelStyle={{ color: '#1e293b', fontWeight: 'bold', marginBottom: '0.5rem' }}
-                              formatter={(value: number) => [`${value.toFixed(2)} MB`, 'Memoria RAM']}
-                            />
-                            <Line 
-                              type="monotone" 
-                              dataKey="memory" 
-                              stroke="#f59e0b" 
-                              strokeWidth={2}
-                              name="Memoria RAM"
-                              dot={false}
-                              isAnimationActive={false}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                        <div style={{ 
-                          marginTop: '1rem', 
-                          display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          gap: '0.5rem'
-                        }}>
-                          <div style={{ 
-                            width: '16px', 
-                            height: '3px', 
-                            backgroundColor: '#f59e0b',
-                            borderRadius: '2px'
-                          }}></div>
-                          <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
-                            Memoria RAM
-                          </span>
-                        </div>
                       </div>
                     </div>
                   )}
                 </div>
               ) : (
-                <div style={{ 
-                  padding: '2rem', 
-                  textAlign: 'center', 
-                  backgroundColor: '#f8fafc', 
-                  borderRadius: '0.5rem',
-                  border: '1px solid #e2e8f0' 
-                }}>
-                  <Activity size={48} color="#94a3b8" style={{ margin: '0 auto 1rem' }} />
-                  <p style={{ color: '#64748b', fontSize: '0.875rem', margin: 0 }}>
-                    No hay métricas disponibles para este análisis.
-                  </p>
-                  <p style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '0.5rem' }}>
-                    Las métricas se recopilan durante la ejecución del análisis.
-                  </p>
-                </div>
+                <p style={{ color: '#64748b' }}>No hay métricas disponibles</p>
               )}
-            </div>
-          )}
 
-          {activeTab === 'params' && (
-            <div>
-              <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
-                Parámetros del Modelo
-              </h3>
-              {analysis.modelParameters && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
-                  {Object.entries(analysis.modelParameters).map(([key, value]) => (
-                    <div key={key} style={{ padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
-                      <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.5rem 0', textTransform: 'uppercase' }}>
-                        {key.replace(/_/g, ' ')}
-                      </p>
-                      <p style={{ color: '#1e293b', fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
-                        {String(value)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Metadata */}
               {analysis.result?.metadata && (
                 <div style={{ marginTop: '1.5rem' }}>
                   <h4 style={{ fontSize: '1rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
-                    Metadata de Ejecución
+                    Información de Procesamiento
                   </h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                     <div style={{ padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
                       <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.5rem 0' }}>Tiempo de Procesamiento</p>
                       <p style={{ color: '#1e293b', fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
                         {analysis.result.metadata.processing_time_sec}s
-                      </p>
-                    </div>
-                    <div style={{ padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
-                      <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0 0 0.5rem 0' }}>Throughput</p>
-                      <p style={{ color: '#1e293b', fontSize: '1.125rem', fontWeight: '600', margin: 0 }}>
-                        {(analysis.result.metadata as any).throughput_packets_per_sec?.toFixed(2) || 'N/A'} {(analysis.result.metadata as any).throughput_packets_per_sec ? 'pkt/s' : ''}
                       </p>
                     </div>
                     <div style={{ padding: '1rem', backgroundColor: '#f8fafc', borderRadius: '0.5rem', border: '1px solid #e2e8f0' }}>
@@ -990,6 +656,30 @@ export default function AnalysisDetail() {
               )}
             </div>
           )}
+
+          {activeTab === 'params' && (
+            <div>
+              <h3 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b', margin: '0 0 1rem 0' }}>
+                Parámetros de Entrada
+              </h3>
+              {analysis.inputData ? (
+                <div style={{ display: 'grid', gap: '0.75rem' }}>
+                  {Object.entries(analysis.inputData).map(([key, value]) => (
+                    <div key={key} style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '1rem', padding: '0.75rem', backgroundColor: '#f8fafc', borderRadius: '0.375rem', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontWeight: '600', color: '#475569', textTransform: 'capitalize' }}>
+                        {key.replace(/_/g, ' ')}:
+                      </span>
+                      <span style={{ color: '#1e293b', fontFamily: key.includes('id') ? 'monospace' : 'inherit', fontSize: '0.875rem' }}>
+                        {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: '#64748b' }}>No hay parámetros disponibles</p>
+              )}
+            </div>
+          )}
         </div>
       </Card>
 
@@ -999,8 +689,8 @@ export default function AnalysisDetail() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#ef4444', marginTop: '1.5rem' }}>
             <AlertCircle size={24} />
             <div>
-              <p style={{ fontWeight: '600', margin: '0 0 0.5rem 0' }}>Error en el Análisis</p>
-              <p style={{ margin: 0, fontSize: '0.875rem' }}>{analysis.error}</p>
+              <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600' }}>Error de Análisis</h3>
+              <p style={{ margin: '0.25rem 0 0', color: '#64748b' }}>{analysis.error}</p>
             </div>
           </div>
         </Card>
