@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: ai-platform
+  namespace: mef
   labels:
     app: frontend
     component: ui
@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: imperia-frontend:latest
+        image: mef-frontend:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
@@ -30,20 +30,20 @@ spec:
             cpu: "100m"
           limits:
             memory: "256Mi"
-            cpu: "200m"
+            cpu: "500m"
         livenessProbe:
           httpGet:
-            path: /health
+            path: /
             port: 80
           initialDelaySeconds: 10
-          periodSeconds: 10
+          periodSeconds: 30
           timeoutSeconds: 3
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /health
+            path: /
             port: 80
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 2
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
           failureThreshold: 3

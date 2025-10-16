@@ -2,12 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: ai-platform
+  namespace: mef
   labels:
     app: postgres
     component: database
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: postgres
@@ -24,59 +26,61 @@ spec:
         - containerPort: 5432
           name: postgres
         env:
+        - name: POSTGRES_DB
+          valueFrom:
+            configMapKeyRef:
+              name: mef-config
+              key: DB_NAME
         - name: POSTGRES_USER
           valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: POSTGRES_USER
+            configMapKeyRef:
+              name: mef-config
+              key: DB_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: postgres-secret
+              name: mef-secrets
               key: POSTGRES_PASSWORD
-        - name: POSTGRES_DB
-          valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: POSTGRES_DB
         - name: PGDATA
-          value: /var/lib/postgresql/data/pgdata
+          valueFrom:
+            configMapKeyRef:
+              name: mef-config
+              key: PGDATA
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
-        - name: init-scripts
-          mountPath: /docker-entrypoint-initdb.d
         resources:
           requests:
             memory: "256Mi"
             cpu: "250m"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "1Gi"
+            cpu: "1000m"
         livenessProbe:
           exec:
             command:
-            - /bin/sh
-            - -c
-            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
-          initialDelaySeconds: 30
+            - pg_isready
+            - -U
+            - mef_user
+            - -d
+            - mef_db
+          initialDelaySeconds: 10
           periodSeconds: 10
           timeoutSeconds: 5
-          failureThreshold: 3
+          failureThreshold: 5
         readinessProbe:
           exec:
             command:
-            - /bin/sh
-            - -c
-            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
+            - pg_isready
+            - -U
+            - mef_user
+            - -d
+            - mef_db
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
           failureThreshold: 3
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
           claimName: postgres-pvc
-      - name: init-scripts
-        configMap:
-          name: postgres-init-scripts

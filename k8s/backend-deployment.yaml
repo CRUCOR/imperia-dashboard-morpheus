@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
-  namespace: ai-platform
+  namespace: mef
   labels:
     app: backend
     component: api
@@ -19,63 +19,72 @@ spec:
     spec:
       containers:
       - name: backend
-        image: imperia-backend:latest
+        image: mef-backend:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
           name: http
         env:
         - name: PORT
-          value: "3000"
+          valueFrom:
+            configMapKeyRef:
+              name: mef-config
+              key: BACKEND_PORT
         - name: NODE_ENV
-          value: "production"
+          valueFrom:
+            configMapKeyRef:
+              name: mef-config
+              key: NODE_ENV
         - name: DB_HOST
           valueFrom:
             configMapKeyRef:
-              name: postgres-config
+              name: mef-config
               key: DB_HOST
         - name: DB_PORT
           valueFrom:
             configMapKeyRef:
-              name: postgres-config
+              name: mef-config
               key: DB_PORT
         - name: DB_NAME
           valueFrom:
             configMapKeyRef:
-              name: postgres-config
+              name: mef-config
               key: DB_NAME
         - name: DB_USER
           valueFrom:
-            secretKeyRef:
-              name: postgres-secret
-              key: POSTGRES_USER
+            configMapKeyRef:
+              name: mef-config
+              key: DB_USER
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: postgres-secret
-              key: POSTGRES_PASSWORD
+              name: mef-secrets
+              key: DB_PASSWORD
         - name: MORPHEUS_SERVICE_URL
-          value: "http://morpheus-triton-service:8000"
+          valueFrom:
+            configMapKeyRef:
+              name: mef-config
+              key: MORPHEUS_SERVICE_URL
         resources:
           requests:
-            memory: "512Mi"
+            memory: "256Mi"
             cpu: "250m"
           limits:
             memory: "1Gi"
-            cpu: "500m"
+            cpu: "1000m"
         livenessProbe:
           httpGet:
             path: /health
             port: 3000
-          initialDelaySeconds: 30
+          initialDelaySeconds: 40
           periodSeconds: 10
           timeoutSeconds: 5
-          failureThreshold: 3
+          failureThreshold: 5
         readinessProbe:
           httpGet:
             path: /health
             port: 3000
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
+          initialDelaySeconds: 40
+          periodSeconds: 10
+          timeoutSeconds: 5
           failureThreshold: 3

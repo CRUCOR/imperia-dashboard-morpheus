@@ -2,10 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: morpheus-triton
-  namespace: ai-platform
+  namespace: mef
   labels:
     app: morpheus-triton
-    component: ml-model
+    component: ml-service
 spec:
   replicas: 1
   selector:
@@ -15,26 +15,28 @@ spec:
     metadata:
       labels:
         app: morpheus-triton
-        component: ml-model
+        component: ml-service
     spec:
       containers:
       - name: morpheus-triton
-        image: morpheus-triton:latest
+        image: mef-morpheus:latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
           name: http
         env:
         - name: PORT
-          value: "8000"
+          valueFrom:
+            configMapKeyRef:
+              name: mef-config
+              key: MORPHEUS_PORT
         resources:
           requests:
-            memory: "1Gi"
+            memory: "512Mi"
             cpu: "500m"
           limits:
-            memory: "4Gi"
+            memory: "2Gi"
             cpu: "2000m"
-            # nvidia.com/gpu: 1  # Uncomment if GPU is available
         livenessProbe:
           httpGet:
             path: /health
@@ -42,12 +44,12 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
-          failureThreshold: 3
+          failureThreshold: 5
         readinessProbe:
           httpGet:
             path: /health
             port: 8000
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
           failureThreshold: 3
