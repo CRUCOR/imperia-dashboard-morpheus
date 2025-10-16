@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  morpheus-triton:
+    environment:
+      # Enable GPU-specific env vars when running on a host with NVIDIA drivers
+      CUDA_VISIBLE_DEVICES: 0
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+      TF_FORCE_GPU_ALLOW_GROWTH: "true"
+      CUDA_DEVICE_ORDER: "PCI_BUS_ID"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

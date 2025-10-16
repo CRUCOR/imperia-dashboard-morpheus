@@ -34,7 +34,7 @@ export default function Sidebar() {
           color: '#f37726',
           margin: 0
         }}>
-          Imperia
+          MEF
         </h1>
         <p style={{
           fontSize: '0.875rem',

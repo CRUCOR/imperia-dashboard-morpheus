@@ -19,23 +19,76 @@ export class AnalysisController {
       }
 
       const {
-        model_name = 'abp',
+        model_name = 'cryptomining',
+        // General parameters
         pipeline_batch_size,
         model_max_batch_size,
-        num_threads
+        num_threads,
+        // Digital Fingerprint
+        algorithm,
+        include_metadata,
+        // Sensitive Info
+        scan_pii,
+        scan_credentials,
+        scan_api_keys,
+        confidence_threshold,
+        // Phishing
+        check_urls,
+        check_emails,
+        analyze_content,
+        // Fraud Detection
+        transaction_threshold,
+        risk_level,
+        // Ransomware
+        scan_encrypted_files,
+        check_extensions,
+        analyze_behavior
       } = req.body;
 
-      // Parse and validate numeric parameters
-      const pipelineBatchSize = pipeline_batch_size ? parseInt(pipeline_batch_size) : undefined;
-      const modelMaxBatchSize = model_max_batch_size ? parseInt(model_max_batch_size) : undefined;
-      const numThreads = num_threads ? parseInt(num_threads) : undefined;
+      // Build model parameters based on model type
+      const modelParameters: any = {};
+
+      // Add common parameters
+      if (pipeline_batch_size) modelParameters.pipeline_batch_size = parseInt(pipeline_batch_size);
+      if (model_max_batch_size) modelParameters.model_max_batch_size = parseInt(model_max_batch_size);
+      if (num_threads) modelParameters.num_threads = parseInt(num_threads);
+
+      // Add model-specific parameters
+      switch (model_name) {
+        case 'digital-fingerprint':
+          if (algorithm) modelParameters.algorithm = algorithm;
+          if (include_metadata !== undefined) modelParameters.include_metadata = include_metadata === 'true';
+          break;
+        
+        case 'sensitive-info':
+          if (scan_pii !== undefined) modelParameters.scan_pii = scan_pii === 'true';
+          if (scan_credentials !== undefined) modelParameters.scan_credentials = scan_credentials === 'true';
+          if (scan_api_keys !== undefined) modelParameters.scan_api_keys = scan_api_keys === 'true';
+          if (confidence_threshold) modelParameters.confidence_threshold = parseFloat(confidence_threshold);
+          break;
+        
+        case 'phishing':
+          if (check_urls !== undefined) modelParameters.check_urls = check_urls === 'true';
+          if (check_emails !== undefined) modelParameters.check_emails = check_emails === 'true';
+          if (analyze_content !== undefined) modelParameters.analyze_content = analyze_content === 'true';
+          break;
+        
+        case 'fraud-detection':
+          if (transaction_threshold) modelParameters.transaction_threshold = parseFloat(transaction_threshold);
+          if (risk_level) modelParameters.risk_level = risk_level;
+          break;
+        
+        case 'ransomware':
+          if (scan_encrypted_files !== undefined) modelParameters.scan_encrypted_files = scan_encrypted_files === 'true';
+          if (check_extensions !== undefined) modelParameters.check_extensions = check_extensions === 'true';
+          if (analyze_behavior !== undefined) modelParameters.analyze_behavior = analyze_behavior === 'true';
+          break;
+      }
 
       const result = await analysisService.createAnalysis(
         req.file,
         model_name,
-        pipelineBatchSize,
-        modelMaxBatchSize,
-        numThreads
+        Object.keys(modelParameters).length > 0 ? modelParameters : undefined
       );
 
       res.status(202).json(result);

@@ -99,10 +99,8 @@ export class AnalysisService {
    */
   async createAnalysis(
     file: Express.Multer.File,
-    modelName: string = 'abp',
-    pipelineBatchSize?: number,
-    modelMaxBatchSize?: number,
-    numThreads?: number
+    modelName: string = 'cryptomining',
+    modelParameters?: any
   ): Promise<AnalysisResponse> {
     const analysisId = this.generateAnalysisId();
 
@@ -116,16 +114,6 @@ export class AnalysisService {
       const parsed = this.parseJsonlines(file.buffer);
       (fileMetadata as any).num_rows = parsed.length;
     }
-
-    // Build model parameters
-    const modelParameters: ABPParameters | undefined =
-      pipelineBatchSize !== undefined || modelMaxBatchSize !== undefined || numThreads !== undefined
-        ? {
-            pipeline_batch_size: pipelineBatchSize,
-            model_max_batch_size: modelMaxBatchSize,
-            num_threads: numThreads
-          }
-        : undefined;
 
     // Create analysis record in database
     await databaseService.createAnalysis(analysisId, modelName, fileMetadata, modelParameters);
@@ -142,9 +130,7 @@ export class AnalysisService {
       analysisId,
       file,
       modelName,
-      pipelineBatchSize,
-      modelMaxBatchSize,
-      numThreads
+      modelParameters
     ).catch((error) => {
       console.error(`[${analysisId}] Error processing analysis:`, error);
     });
@@ -163,16 +149,14 @@ export class AnalysisService {
     analysisId: string,
     file: Express.Multer.File,
     modelName: string,
-    pipelineBatchSize?: number,
-    modelMaxBatchSize?: number,
-    numThreads?: number
+    modelParameters?: any
   ): Promise<void> {
     const startTime = Date.now();
     let metricsInterval: NodeJS.Timeout | null = null;
 
     try {
       console.log(`[${analysisId}] Starting analysis with model: ${modelName}`);
-      console.log(`[${analysisId}] Parameters: pipeline_batch_size=${pipelineBatchSize}, model_max_batch_size=${modelMaxBatchSize}, num_threads=${numThreads}`);
+      console.log(`[${analysisId}] Parameters:`, modelParameters);
 
       // Start collecting metrics every 1 second
       metricsInterval = setInterval(async () => {
@@ -193,30 +177,19 @@ export class AnalysisService {
         }
       }, 1000);
 
-      // Send to Morpheus/Triton with ABP parameters
+      // Send to Morpheus/Triton with model parameters
       const result = await morpheusService.predict(
         file,
         modelName,
         analysisId,
-        pipelineBatchSize,
-        modelMaxBatchSize,
-        numThreads
+        modelParameters
       );
       const duration = Date.now() - startTime;
 
       console.log(`[${analysisId}] Analysis completed in ${duration}ms`);
-      console.log(`[${analysisId}] Predictions in result: ${result.predictions?.length || 0}`);
 
-      // Store result statistics in analyses table (without predictions)
+      // Store result in database
       await databaseService.updateAnalysisResult(analysisId, 'completed', result, duration);
-
-      // Store all predictions in predictions table (batch insert for efficiency)
-      if (result.predictions && result.predictions.length > 0) {
-        console.log(`[${analysisId}] Storing ${result.predictions.length} predictions in database...`);
-        await databaseService.insertPredictionsBatch(analysisId, result.predictions);
-      }
-
-      console.log(`[${analysisId}] ✓ Analysis and predictions saved to database`);
 
       // Get updated analysis for real-time notification
       const completedAnalysis = await databaseService.getAnalysisById(analysisId);
@@ -291,7 +264,7 @@ export class AnalysisService {
 
   /**
    * Get analysis result by ID
-   * Loads predictions from predictions table with pagination support
+   * Loads predictions from predictions table only for cryptomining model
    */
   async getAnalysisResult(analysisId: string): Promise<AnalysisResultResponse> {
     const analysis = await databaseService.getAnalysisById(analysisId);
@@ -300,20 +273,21 @@ export class AnalysisService {
       throw new Error('Analysis not found');
     }
 
-    // For completed analyses, load predictions from predictions table
-    let predictions = [];
-    if (analysis.status === 'completed' && analysis.result) {
+    // For cryptomining model with predictions stored separately, load from predictions table
+    let resultWithPredictions = analysis.result;
+    
+    if (analysis.status === 'completed' && analysis.result && (analysis.result as any).predictions_stored_separately) {
       // Load first 10,000 predictions by default (can be paginated from frontend)
-      predictions = await databaseService.getPredictions(analysisId, 10000, 0);
+      const predictions = await databaseService.getPredictions(analysisId, 10000, 0);
       
       console.log(`[${analysisId}] Loaded ${predictions.length} predictions from database`);
+      
+      // Merge predictions into result object
+      resultWithPredictions = {
+        ...analysis.result,
+        predictions: predictions
+      };
     }
-
-    // Merge predictions into result object
-    const resultWithPredictions = analysis.result ? {
-      ...analysis.result,
-      predictions: predictions
-    } : null;
 
     return {
       analysisId: analysis.id,

@@ -7,6 +7,17 @@ import psutil
 import os
 import asyncio
 from typing import Optional
+import json
+
+# Import all analysis models
+from models import (
+    analyze_digital_fingerprint,
+    analyze_sensitive_info,
+    analyze_cryptomining,
+    analyze_phishing,
+    analyze_fraud,
+    analyze_ransomware
+)
 
 # Force GPU usage by setting environment variables
 os.environ['CUDA_VISIBLE_DEVICES'] = os.environ.get('CUDA_VISIBLE_DEVICES', '0')
@@ -131,18 +142,40 @@ async def get_metrics():
 @app.post("/predict")
 async def predict(
     file: UploadFile = File(...),
-    model_name: str = Form("abp"),
+    model_name: str = Form("cryptomining"),
     analysisId: Optional[str] = Form(None),
+    # General parameters
     pipeline_batch_size: Optional[int] = Form(256),
     model_max_batch_size: Optional[int] = Form(32),
-    num_threads: Optional[int] = Form(4)
+    num_threads: Optional[int] = Form(4),
+    # Digital Fingerprint parameters
+    algorithm: Optional[str] = Form("sha256"),
+    include_metadata: Optional[bool] = Form(True),
+    # Sensitive Info parameters
+    scan_pii: Optional[bool] = Form(True),
+    scan_credentials: Optional[bool] = Form(True),
+    scan_api_keys: Optional[bool] = Form(True),
+    confidence_threshold: Optional[float] = Form(0.7),
+    # Phishing parameters
+    check_urls: Optional[bool] = Form(True),
+    check_emails: Optional[bool] = Form(True),
+    analyze_content: Optional[bool] = Form(True),
+    # Fraud Detection parameters
+    transaction_threshold: Optional[float] = Form(1000.0),
+    risk_level: Optional[str] = Form("medium"),
+    # Ransomware parameters
+    scan_encrypted_files: Optional[bool] = Form(True),
+    check_extensions: Optional[bool] = Form(True),
+    analyze_behavior: Optional[bool] = Form(True)
 ):
     """
-    ABP (Anomalous Behavior Profiling) model prediction endpoint
-    Analyzes network traffic (PCAP) to detect crypto mining activity
-    
-    Input: jsonlines file with network packet data
-    Output: Per-packet predictions indicating mining activity
+    Universal prediction endpoint supporting multiple security analysis models:
+    1. digital-fingerprint: Generate hashes and detect duplicates
+    2. sensitive-info: Detect PII, credentials, API keys
+    3. cryptomining: Detect crypto mining in network traffic (ABP)
+    4. phishing: Detect phishing attempts
+    5. fraud-detection: Detect fraudulent transactions
+    6. ransomware: Detect ransomware threats
     """
     start_time = time.time()
 
@@ -151,243 +184,131 @@ async def predict(
         file_content = await file.read()
         file_size_mb = len(file_content) / (1024 ** 2)
 
+        print(f"[{analysisId}] ═══════════════════════════════════════")
         print(f"[{analysisId}] Processing file: {file.filename} ({file_size_mb:.2f} MB)")
-        print(f"[{analysisId}] Model: {model_name} (Crypto Mining Detection)")
+        print(f"[{analysisId}] Model: {model_name}")
         print(f"[{analysisId}] Compute Device: {'GPU (CUDA)' if GPU_AVAILABLE else 'CPU (Fallback)'}")
-        print(f"[{analysisId}] ABP Parameters:")
-        print(f"  - pipeline_batch_size: {pipeline_batch_size}")
-        print(f"  - model_max_batch_size: {model_max_batch_size}")
-        print(f"  - num_threads: {num_threads}")
         
-        if not GPU_AVAILABLE:
-            print(f"[{analysisId}] WARNING: GPU not available, using CPU. Performance will be degraded.")
-
-        # Parse jsonlines file (PCAP network traffic data)
-        import json
-        network_packets = []
+        # Parse input data
         try:
             content_str = file_content.decode('utf-8')
             lines = content_str.strip().split('\n')
             
+            data = []
             for line in lines:
                 if line.strip():
                     try:
-                        packet = json.loads(line)
-                        network_packets.append(packet)
-                    except json.JSONDecodeError as e:
-                        print(f"[{analysisId}] Warning: Could not parse line: {e}")
+                        item = json.loads(line)
+                        data.append(item)
+                    except json.JSONDecodeError:
                         continue
             
-            num_rows = len(network_packets)
-            print(f"[{analysisId}] Loaded {num_rows} network packets for analysis")
+            num_rows = len(data)
+            print(f"[{analysisId}] Loaded {num_rows} records for analysis")
             
         except Exception as e:
-            print(f"[{analysisId}] Error parsing jsonlines file: {e}")
-            raise Exception(f"Invalid file format. Expected jsonlines with network packet data: {e}")
+            print(f"[{analysisId}] Error parsing file: {e}")
+            raise Exception(f"Invalid file format. Expected jsonlines: {e}")
 
         if num_rows == 0:
-            raise Exception("No valid network packets found in file")
+            raise Exception("No valid data found in file")
 
         # Log GPU status at start
         gpu_info = get_current_gpu_usage()
         if gpu_info:
-            print(f"[{analysisId}] ═══ GPU Status at Start ═══")
+            print(f"[{analysisId}] ═══ GPU Status ═══")
             print(f"[{analysisId}] GPU Usage: {gpu_info['gpu_usage_percent']}%")
             print(f"[{analysisId}] GPU Memory: {gpu_info['gpu_memory_used_mb']:.0f}MB / {gpu_info['gpu_memory_total_mb']:.0f}MB")
             print(f"[{analysisId}] GPU Temperature: {gpu_info['gpu_temp_c']}°C")
-            print(f"[{analysisId}] ════════════════════════════")
         
-        # Calculate processing strategy
-        # With RTX 4070 SUPER: ~10,000-15,000 packets/sec on GPU
-        estimated_throughput = 12000 if GPU_AVAILABLE else 500  # packets per second
-        processing_time = max(1.0, num_rows / estimated_throughput)
-        
-        print(f"[{analysisId}] ═══ Processing Configuration ═══")
-        print(f"[{analysisId}] Total Packets: {num_rows:,}")
-        print(f"[{analysisId}] Processing Device: {'GPU (CUDA)' if GPU_AVAILABLE else 'CPU'}")
-        print(f"[{analysisId}] Estimated Throughput: {estimated_throughput:,} pkt/s")
-        print(f"[{analysisId}] Estimated Time: {processing_time:.2f}s")
-        print(f"[{analysisId}] Batch Size: {model_max_batch_size}")
-        print(f"[{analysisId}] ════════════════════════════════")
-
-        # Start processing - NO ASYNC DELAYS for maximum GPU performance
-        print(f"[{analysisId}] 🚀 Starting GPU-accelerated analysis...")
         processing_start = time.time()
+        
+        # Route to appropriate model
+        if model_name == "digital-fingerprint":
+            print(f"[{analysisId}] Running Digital Fingerprint Analysis...")
+            print(f"[{analysisId}] Algorithm: {algorithm}")
+            
+            analysis_result = analyze_digital_fingerprint(data, algorithm)
+            model_display = "Digital Fingerprint Generation"
+            
+        elif model_name == "sensitive-info":
+            print(f"[{analysisId}] Running Sensitive Information Detection...")
+            print(f"[{analysisId}] PII Scan: {scan_pii}, Credentials: {scan_credentials}, API Keys: {scan_api_keys}")
+            
+            analysis_result = analyze_sensitive_info(
+                data, scan_pii, scan_credentials, scan_api_keys, confidence_threshold
+            )
+            model_display = "Sensitive Information Detection"
+            
+        elif model_name == "cryptomining":
+            print(f"[{analysisId}] Running Cryptomining Detection (ABP)...")
+            print(f"[{analysisId}] Batch Size: {model_max_batch_size}, Threads: {num_threads}")
+            
+            # Use the existing cryptomining analysis
+            analysis_result = analyze_cryptomining(data, pipeline_batch_size, model_max_batch_size)
+            model_display = "Crypto Mining Detection (ABP)"
+            
+        elif model_name == "phishing":
+            print(f"[{analysisId}] Running Phishing Detection...")
+            print(f"[{analysisId}] Check URLs: {check_urls}, Emails: {check_emails}, Content: {analyze_content}")
+            
+            analysis_result = analyze_phishing(data, check_urls, check_emails, analyze_content)
+            model_display = "Phishing Detection"
+            
+        elif model_name == "fraud-detection":
+            print(f"[{analysisId}] Running Fraud Detection...")
+            print(f"[{analysisId}] Threshold: ${transaction_threshold}, Risk Level: {risk_level}")
+            
+            analysis_result = analyze_fraud(data, transaction_threshold, risk_level)
+            model_display = "Fraud & Identity Theft Detection"
+            
+        elif model_name == "ransomware":
+            print(f"[{analysisId}] Running Ransomware Detection...")
+            print(f"[{analysisId}] Scan Encrypted: {scan_encrypted_files}, Check Extensions: {check_extensions}")
+            
+            analysis_result = analyze_ransomware(
+                data, scan_encrypted_files, check_extensions, analyze_behavior
+            )
+            model_display = "Ransomware Detection"
+            
+        else:
+            raise Exception(f"Unknown model: {model_name}")
 
-        # ABP Model Analysis - Detect crypto mining patterns in network traffic
-        # Processing on GPU with minimal yields for metrics endpoint responsiveness
-        predictions = []
-        
-        # Calculate progress checkpoints (every 10%)
-        progress_checkpoints = [int(num_rows * (i / 10)) for i in range(1, 11)]
-        last_checkpoint = 0
-        
-        for idx, packet in enumerate(network_packets):
-            # Yield to event loop every 1000 packets to keep /metrics endpoint responsive
-            if idx % 1000 == 0:
-                await asyncio.sleep(0)  # Yield control to allow other requests
-            
-            # Log progress every 10%
-            if idx in progress_checkpoints:
-                checkpoint_num = progress_checkpoints.index(idx) + 1
-                elapsed = time.time() - processing_start
-                progress_pct = (idx / num_rows) * 100
-                packets_per_sec = idx / elapsed if elapsed > 0 else 0
-                
-                # Get current GPU usage
-                gpu_info = get_current_gpu_usage()
-                
-                print(f"[{analysisId}] ⚡ Progress: {progress_pct:.0f}% ({idx:,}/{num_rows:,} packets)")
-                print(f"[{analysisId}]    Throughput: {packets_per_sec:.0f} pkt/s | Elapsed: {elapsed:.1f}s")
-                
-                if gpu_info:
-                    print(f"[{analysisId}]    GPU: {gpu_info['gpu_usage_percent']}% | Memory: {gpu_info['gpu_memory_used_mb']:.0f}MB | Temp: {gpu_info['gpu_temp_c']}°C")
-            
-            # Analyze packet features for mining detection
-            # In real model, this would use trained weights to detect mining patterns
-            
-            # Extract features from packet
-            dest_port = int(packet.get("dest_port", 0))
-            src_port = int(packet.get("src_port", 0))
-            data_len = int(packet.get("data_len", 0))
-            protocol = packet.get("protocol", "6")
-            
-            # Heuristic-based mining detection (simulating trained model)
-            # Common mining ports: 3333, 4444, 5555, 8333, 9332, 14433, 45560
-            mining_ports = [3333, 4444, 5555, 8333, 9332, 14433, 45560]
-            is_mining_port = dest_port in mining_ports or src_port in mining_ports
-            
-            # Mining traffic typically has consistent packet sizes
-            is_suspicious_size = 54 <= data_len <= 100
-            
-            # Calculate anomaly probability (simulating model inference)
-            base_probability = 0.02  # 2% baseline
-            
-            if is_mining_port:
-                anomaly_probability = 0.85 + random.uniform(-0.1, 0.1)
-            elif is_suspicious_size and random.random() < 0.1:
-                anomaly_probability = 0.65 + random.uniform(-0.15, 0.15)
-            else:
-                anomaly_probability = base_probability + random.uniform(-0.01, 0.05)
-            
-            # Clamp probability
-            anomaly_probability = max(0.0, min(1.0, anomaly_probability))
-            
-            # Model prediction output - complete JSON object from model
-            # This is what the actual ABP model would return
-            is_mining = anomaly_probability > 0.5
-            
-            prediction_entry = {
-                "row_id": idx,
-                "prediction": {
-                    "is_mining": is_mining,
-                    "mining_probability": round(anomaly_probability, 4),
-                    "regular_probability": round(1.0 - anomaly_probability, 4),
-                    "confidence": round(anomaly_probability if is_mining else (1.0 - anomaly_probability), 4),
-                    "anomaly_score": round(anomaly_probability, 4),
-                    "detected_patterns": []
-                },
-                "packet_info": {
-                    "src_ip": packet.get("src_ip", ""),
-                    "dest_ip": packet.get("dest_ip", ""),
-                    "src_port": src_port,
-                    "dest_port": dest_port,
-                    "protocol": protocol,
-                    "data_len": data_len,
-                    "timestamp": packet.get("timestamp", "")
-                }
-            }
-            
-            # Add detected patterns for mining traffic
-            if is_mining_port:
-                prediction_entry["prediction"]["detected_patterns"].append({
-                    "pattern": "suspicious_port",
-                    "description": f"Connection to known mining port {dest_port}",
-                    "severity": "high"
-                })
-            
-            if is_suspicious_size:
-                prediction_entry["prediction"]["detected_patterns"].append({
-                    "pattern": "consistent_packet_size",
-                    "description": f"Packet size ({data_len} bytes) matches mining traffic pattern",
-                    "severity": "medium"
-                })
-            
-            predictions.append(prediction_entry)
-
-        # Calculate statistics from prediction results
-        num_mining = sum(1 for p in predictions if p["prediction"]["is_mining"])
-        num_regular = num_rows - num_mining
-        
-        # Identify suspicious IPs (IPs with high mining activity)
-        ip_mining_counts = {}
-        for pred in predictions:
-            if pred["prediction"]["is_mining"]:
-                src_ip = pred["packet_info"]["src_ip"]
-                ip_mining_counts[src_ip] = ip_mining_counts.get(src_ip, 0) + 1
-        
-        suspicious_ips = sorted(ip_mining_counts.items(), key=lambda x: x[1], reverse=True)[:10]
-        
-        # Calculate final processing time
-        total_processing_time = time.time() - processing_start
-        actual_throughput = num_rows / total_processing_time if total_processing_time > 0 else 0
+        processing_time = time.time() - processing_start
         
         # Get final GPU status
         gpu_info_final = get_current_gpu_usage()
         
-        # Log completion with detailed statistics
         print(f"[{analysisId}] ═══ Analysis Completed ═══")
-        print(f"[{analysisId}] ✓ Total Time: {total_processing_time:.2f}s")
-        print(f"[{analysisId}] ✓ Actual Throughput: {actual_throughput:.0f} pkt/s")
-        print(f"[{analysisId}] ✓ Packets Analyzed: {num_rows:,}")
-        print(f"[{analysisId}] ✓ Mining Detected: {num_mining:,} ({(num_mining/num_rows*100):.1f}%)")
-        print(f"[{analysisId}] ✓ Regular Traffic: {num_regular:,} ({(num_regular/num_rows*100):.1f}%)")
+        print(f"[{analysisId}] ✓ Total Time: {processing_time:.2f}s")
+        print(f"[{analysisId}] ✓ Records Analyzed: {num_rows:,}")
         
         if gpu_info_final:
             print(f"[{analysisId}] ═══ Final GPU Status ═══")
             print(f"[{analysisId}] GPU Usage: {gpu_info_final['gpu_usage_percent']}%")
-            print(f"[{analysisId}] GPU Memory: {gpu_info_final['gpu_memory_used_mb']:.0f}MB / {gpu_info_final['gpu_memory_total_mb']:.0f}MB")
-            print(f"[{analysisId}] GPU Temperature: {gpu_info_final['gpu_temp_c']}°C")
+            print(f"[{analysisId}] GPU Memory: {gpu_info_final['gpu_memory_used_mb']:.0f}MB")
         
-        print(f"[{analysisId}] ═══════════════════════════")
+        print(f"[{analysisId}] ═══════════════════════════════════════")
 
-        # Note: For large datasets, predictions are returned to frontend but NOT stored in PostgreSQL
-        # This avoids the PostgreSQL JSONB 256MB limit while still processing the complete dataset
-        print(f"[{analysisId}] ℹ️  Complete dataset analysis: {num_rows:,} predictions generated")
-        print(f"[{analysisId}] ℹ️  Predictions will be returned to frontend but not stored in DB")
-
+        # Build result based on model
         result = {
             "analysisId": analysisId,
-            "model": f"{model_name} (Crypto Mining Detection)",
+            "model": model_display,
             "num_rows": num_rows,
-            "predictions": predictions,  # All predictions - not stored in DB
-            "statistics": {
-                "total_packets": num_rows,
-                "mining_detected": num_mining,
-                "regular_traffic": num_regular,
-                "mining_rate": round(num_mining / num_rows * 100, 2) if num_rows > 0 else 0,
-                "suspicious_ips": [{"ip": ip, "mining_packets": count} for ip, count in suspicious_ips]
-            },
+            **analysis_result,  # Merge model-specific results
             "metadata": {
                 "file_name": file.filename,
                 "file_size_mb": round(file_size_mb, 2),
-                "processing_time_sec": round(time.time() - start_time, 2),
-                "throughput_packets_per_sec": round(num_rows / (time.time() - start_time), 2),
-                "gpu_used": GPU_AVAILABLE,
-                "abp_parameters": {
-                    "pipeline_batch_size": pipeline_batch_size,
-                    "model_max_batch_size": model_max_batch_size,
-                    "num_threads": num_threads
-                }
+                "processing_time_sec": round(processing_time, 2),
+                "gpu_used": GPU_AVAILABLE
             }
         }
 
         # Reset metrics after processing
         update_metrics(processing=False)
         
-        # Final log with total request time
         total_request_time = time.time() - start_time
-        print(f"[{analysisId}] 🎯 Total Request Time: {total_request_time:.2f}s (including file I/O)")
+        print(f"[{analysisId}] 🎯 Total Request Time: {total_request_time:.2f}s")
 
         return result
 
@@ -405,8 +326,15 @@ async def root():
     """Root endpoint"""
     return {
         "service": "Morpheus Triton Service",
-        "version": "1.0.0",
-        "model": "ABP (Mock)",
+        "version": "2.0.0",
+        "models": [
+            "digital-fingerprint",
+            "sensitive-info",
+            "cryptomining",
+            "phishing",
+            "fraud-detection",
+            "ransomware"
+        ],
         "status": "running"
     }
 
@@ -418,3 +346,4 @@ if __name__ == "__main__":
         port=port,
         log_level="info"
     )
+

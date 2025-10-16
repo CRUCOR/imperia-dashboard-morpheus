@@ -1,0 +1,8 @@
+{"src_ip": "192.168.1.100", "dest_ip": "pool.minergate.com", "src_port": 54321, "dest_port": 3333, "protocol": "6", "data_len": 64, "timestamp": "2024-01-01T10:00:00"}
+{"src_ip": "192.168.1.100", "dest_ip": "pool.minergate.com", "src_port": 54321, "dest_port": 3333, "protocol": "6", "data_len": 68, "timestamp": "2024-01-01T10:00:01"}
+{"src_ip": "192.168.1.101", "dest_ip": "8.8.8.8", "src_port": 443, "dest_port": 443, "protocol": "6", "data_len": 1420, "timestamp": "2024-01-01T10:00:02"}
+{"src_ip": "192.168.1.100", "dest_ip": "pool.minergate.com", "src_port": 54321, "dest_port": 3333, "protocol": "6", "data_len": 62, "timestamp": "2024-01-01T10:00:03"}
+{"src_ip": "192.168.1.102", "dest_ip": "nanopool.org", "src_port": 12345, "dest_port": 9999, "protocol": "6", "data_len": 56, "timestamp": "2024-01-01T10:00:04"}
+{"src_ip": "192.168.1.101", "dest_ip": "google.com", "src_port": 80, "dest_port": 80, "protocol": "6", "data_len": 512, "timestamp": "2024-01-01T10:00:05"}
+{"src_ip": "192.168.1.100", "dest_ip": "pool.minergate.com", "src_port": 54321, "dest_port": 3333, "protocol": "6", "data_len": 64, "timestamp": "2024-01-01T10:00:06"}
+{"src_ip": "192.168.1.103", "dest_ip": "btc.pool.com", "src_port": 55555, "dest_port": 8333, "protocol": "6", "data_len": 70, "timestamp": "2024-01-01T10:00:07"}

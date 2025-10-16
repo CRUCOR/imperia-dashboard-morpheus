@@ -1,0 +1,8 @@
+{"transaction_id": "txn_001", "amount": 5000.00, "timestamp": "2024-01-01T10:00:00", "location": "Nigeria", "user_id": "user_123", "ip_address": "41.190.1.1"}
+{"transaction_id": "txn_002", "amount": 50.00, "timestamp": "2024-01-01T10:05:00", "location": "USA", "user_id": "user_123", "ip_address": "192.168.1.1"}
+{"transaction_id": "txn_003", "amount": 2500.00, "timestamp": "2024-01-01T10:06:00", "location": "Russia", "user_id": "user_456", "ip_address": "77.88.8.8"}
+{"transaction_id": "txn_004", "amount": 100.00, "timestamp": "2024-01-01T10:10:00", "location": "USA", "user_id": "user_789", "ip_address": "8.8.8.8"}
+{"transaction_id": "txn_005", "amount": 15000.00, "timestamp": "2024-01-01T10:15:00", "location": "China", "user_id": "user_456", "ip_address": "123.125.114.144"}
+{"transaction_id": "txn_006", "amount": 75.00, "timestamp": "2024-01-01T10:20:00", "location": "Canada", "user_id": "user_123", "ip_address": "192.168.1.1"}
+{"transaction_id": "txn_007", "amount": 8000.00, "timestamp": "2024-01-01T10:21:00", "location": "Brazil", "user_id": "user_123", "ip_address": "177.12.34.56"}
+{"transaction_id": "txn_008", "amount": 250.00, "timestamp": "2024-01-01T10:30:00", "location": "USA", "user_id": "user_789", "ip_address": "8.8.8.8"}
