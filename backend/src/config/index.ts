@@ -10,7 +10,7 @@ dotenv.config();
 export const config = {
   port: parseInt(process.env.PORT || '3000'),
   nodeEnv: process.env.NODE_ENV || 'development',
-  morpheusUrl: process.env.MORPHEUS_SERVICE_URL || 'http://morpheus-triton-service:8000',
+  morpheusUrl: process.env.MORPHEUS_SERVICE_URL || 'http://localhost:8000',
   database: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432'),
